@@ -26,4 +26,4 @@ Details: [source format](skills/edit-librebot-bots/references/source-format.md) 
 
 When changing the source-tool pin, update its schema links and source-format reference together. Exercise installation in a disposable project, then run the documented scaffold, validation, preview, and skill-resolution workflow on a disposable bot before committing.
 
-MIT licensed; see [LICENSE](LICENSE).
+MIT licensed; see [LICENSE](LICENSE). Each installable skill also includes its license so copied installations retain the notice.
