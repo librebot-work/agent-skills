@@ -7,18 +7,14 @@ Agent Skills for developers using an LLM or coding harness to edit Librebot bot 
 Run from the project where your coding agent works:
 
 ```sh
-npx skills add librebot-work/agent-skills --skill edit-librebot-bots
+npx skills add librebot-work/agent-skills
 ```
 
-Choose your agent when prompted. For a non-interactive Codex installation:
-
-```sh
-npx --yes skills add librebot-work/agent-skills --skill edit-librebot-bots --agent codex --copy --yes
-```
+Follow the prompts to choose the skills and coding agents to install.
 
 The repository is private, so installation requires GitHub repository access and Git authentication. If GitHub access is configured only through SSH, use `git@github.com:librebot-work/agent-skills.git` instead of `librebot-work/agent-skills`. The installer reads skills directly from Git—there is no npm package to publish. See the [Skills CLI](https://github.com/vercel-labs/skills) for other supported agents and installation scopes.
 
-## Available skill
+## Available skills
 
 [**edit-librebot-bots**](skills/edit-librebot-bots/SKILL.md) guides source edits, semantic validation, resolved-definition review, external skill locking, and authorized Git publication. It keeps system metadata and credentials out of bot repositories and preserves running-instance pins.
 
