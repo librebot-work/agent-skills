@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. The `TOOLS` assignment in [SKILL.md](../SKILL.md) pins the CLI to a commit of the public [librebot-work/tools](https://github.com/librebot-work/tools) repository, whose package version is `0.2.1`. Fetching this package does not require `@librebot/tools` to be published on npm. Never silently replace the pin with `main` or `latest`.
+Use Node.js 24 or newer and Git. The `TOOLS` assignment in [SKILL.md](../SKILL.md) pins the CLI to a commit of the public [librebot-work/tools](https://github.com/librebot-work/tools) repository, whose package version is `0.2.3`. Fetching this package does not require `@librebot/tools` to be published on npm. Never silently replace the pin with `main` or `latest`.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals.
 
@@ -22,9 +22,9 @@ The source parser and validator do not execute bot prompts, shell commands from 
 
 These are the schemas shipped with the pinned tool, not a generic agent or MCP schema:
 
-- [bot.yaml schema](https://github.com/librebot-work/tools/blob/362de24b8a2732dcdee9f0f3510455a92f056c64/schema/v1/bot-yaml-schema.json)
-- [skills/sources.yaml schema](https://github.com/librebot-work/tools/blob/362de24b8a2732dcdee9f0f3510455a92f056c64/schema/v1/skills-sources-schema.json)
-- [Source tooling documentation](https://github.com/librebot-work/tools/blob/362de24b8a2732dcdee9f0f3510455a92f056c64/README.md)
+- [bot.yaml schema](https://github.com/librebot-work/tools/blob/5c9c086bfa4758c4b2ee726497ce900730187954/schema/v1/bot-yaml-schema.json)
+- [skills/sources.yaml schema](https://github.com/librebot-work/tools/blob/5c9c086bfa4758c4b2ee726497ce900730187954/schema/v1/skills-sources-schema.json)
+- [Source tooling documentation](https://github.com/librebot-work/tools/blob/5c9c086bfa4758c4b2ee726497ce900730187954/README.md)
 
 An editor schema is useful for completion, but is not a substitute for `validate`. Semantic validation checks relationships and constraints not fully expressed by JSON Schema.
 

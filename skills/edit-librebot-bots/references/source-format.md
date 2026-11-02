@@ -65,10 +65,36 @@ Keep existing role IDs stable. A trigger's `deciderRole`, if specified, must mat
 
 - A workspace entry is `{ path: ./repo }`, without a UUID. Use a relative, canonical path; the validator also checks reservations, overlap, duplicates, and depth. The actual repository binding belongs to the instance configuration.
 - Trigger fields include `label`, `kind: github`, `eventTypes`, and `deciderInstructions`, with optional `description`, `repository`, `inputs`, `deciderRole`, and `enabledByDefault`. Use the actual event names and input semantics from the existing bot and platform; do not guess new supported events. Labels must be unique. A repository selector uses `mode: any` or `mode: pinned`, with `fullName` for a pinned repository.
-- Native `githubActions` values are `read_issue`, `push_branch`, `pull_request`, and `comment_issue`. A trigger does not itself authorize write operations.
+- Native `githubActions` values are `read_issue`, `push_branch`, `pull_request`, `comment_issue`, `search_issues`, `read_pull_request`, `read_repository`, `update_issue_labels`, and `react_issue`. A trigger does not itself authorize write operations. Native GitHub operations use the linked GitHub App and bound repository, not an MCP connector.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
 
 Preserve mount paths and trigger/connector labels unless deliberately changing those declarations. The platform owns their stable IDs; internal IDs shown by `preview` are not source configuration.
+
+### Native GitHub reactions
+
+Declare `react_issue` in `githubActions` to expose `github_react_issue`; declare
+`read_issue` too when the bot must discover issue conversation comment IDs.
+The actual repository and mount ID come from the instance binding and native
+tool schema, not an owner/repo field in tool input. The linked user needs live
+read access or higher and the App needs Issues write permission; workspace
+checkout separately needs Contents read.
+
+- Add: pass `mountId`, exactly one of `issueNumber` (issue or PR body) or
+  `commentId` (issue/PR conversation comment), and `content`. `operation` defaults
+  to `"add"`. Supported content: `+1`, `-1`, `laugh`, `confused`, `heart`,
+  `hooray`, `rocket`, `eyes`. Repeating an existing reaction returns its receipt.
+- Remove: pass `operation: "remove"`, the same target, and `reactionId` from a
+  prior add receipt. Omit `content`. Never invent reaction IDs or assume a
+  reaction ID belongs to another target. Missing or inaccessible reactions
+  return errors; acknowledge removal only after a successful tool result.
+- Review comments are not supported. Reactions use the App identity, not the
+  linked user's personal identity. No new capability name is needed for removal.
+
+Capability declarations belong in `bot.yaml`; instructions describing when to
+react or remove a reaction belong in `instructions.md`. Do not put tool-call
+arguments such as `operation` or `reactionId` into the capability list. Adding
+or removing a capability does not automatically upgrade running instances.
+
 
 ## Knowledge
 
