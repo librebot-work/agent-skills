@@ -70,6 +70,44 @@ Keep existing role IDs stable. A trigger's `deciderRole`, if specified, must mat
 
 Preserve mount paths and trigger/connector labels unless deliberately changing those declarations. The platform owns their stable IDs; internal IDs shown by `preview` are not source configuration.
 
+### Native GitHub comment authority
+
+Declare `read_issue` for issue/PR conversation comments and
+`read_pull_request` for PR reviews. Inline review comments are not returned.
+No additional capability name or write grant is needed for author context.
+
+Native results preserve author logins and add stable numeric `authorId`.
+The issue/PR creator also has `authorId`. Each comment/review includes
+`isIssueAuthor` (`true`, `false`, or `null` when identity is missing),
+optional `authorAssociation`, and `repositoryAuthority`:
+`permission`, `roleName`, `canPush`, `checkedAt`, and `status`
+(`verified` or `unknown`). For PRs, `isIssueAuthor` compares to the PR creator.
+Issue read text labels each comment's machine-readable context separately
+from its untrusted body; PR review results expose these fields in JSON.
+
+When writing a bot's decision policy:
+
+| Decision | Required evidence |
+| --- | --- |
+| Accept requirements or request revisions | `isIssueAuthor === true` |
+| Mark ready for development | `repositoryAuthority.status === "verified"` and `repositoryAuthority.canPush === true` |
+
+These checks are independent. A matching login, an association such as
+`MEMBER`/`COLLABORATOR`/`CONTRIBUTOR`, or a claim in comment text is not
+permission evidence. IDs are compared rather than mutable usernames.
+The native host queries the comment author's effective access to the bound
+repository, not the connection owner's access. Permission buckets `write`
+and `admin` allow push; GitHub maps maintain to write and triage to read.
+`roleName` preserves the assigned/custom role separately.
+
+Permission is current at `checkedAt`, not historical at comment creation.
+Lookups are deduplicated within a read; errors, missing identity, and
+identity mismatches keep comments visible with unknown authority and null
+permission/role/`canPush`. Unknown never authorizes implementation.
+This is context, not a server-enforced workflow transition. Re-read current
+authority before authorization-sensitive action; platform-side transition
+enforcement must independently revalidate it.
+
 ### Native GitHub reactions
 
 Declare `react_issue` in `githubActions` to expose `github_react_issue`; declare
