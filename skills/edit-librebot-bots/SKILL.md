@@ -20,7 +20,7 @@ Run these commands from the bot repository root, using the harness's shell tool:
 
 ```sh
 node --version
-TOOLS='github:librebot-work/tools#5c9c086bfa4758c4b2ee726497ce900730187954'
+TOOLS='github:librebot-work/tools#b47c050b0221e26615b91ff5ee2e6939a9a2868c'
 npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
