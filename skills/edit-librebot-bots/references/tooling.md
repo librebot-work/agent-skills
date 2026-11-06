@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. The CLI is pinned to tools commit `5bf5ffdde6f50d745b105c66732083e4d33a520d` (package version `0.3.0`). Set `TOOLS` to the immutable archive URL shown in [SKILL.md](../SKILL.md). The platform vendors the same release as `librebot-tools-0.3.0.tgz`; an explicitly supplied matching local tarball may be used offline. Do not substitute `main`, `latest`, or an older pin.
+Use Node.js 24 or newer and Git. The CLI is pinned to tools commit `46c5e139d1542f42798606d357a7621eda938024` (package version `0.4.0`), which includes repository-owned icons. Set `TOOLS` to the immutable archive URL shown in [SKILL.md](../SKILL.md). The platform vendors the same release as `librebot-tools-0.4.0.tgz`; an explicitly supplied matching local tarball may be used offline. Do not substitute `main`, `latest`, or an older pin.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals.
 

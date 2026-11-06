@@ -7,6 +7,8 @@ Use the pinned Librebot parser and semantic validator as the source of truth. Re
 ```text
 bot.yaml
 instructions.md
+assets/
+  icon.svg                 # default replaceable bot icon
 knowledge/
   README.md                 # index only, not ingested
   product-guide.md          # text knowledge
@@ -31,12 +33,33 @@ The only top-level keys are:
 | `formatVersion` | Required; integer `1` |
 | `name` | Required display name, not the bot's URL handle |
 | `description` | Required non-empty description |
+| `icon` | Optional repository-relative SVG, PNG, or WebP file path |
 | `modelRoles` | Required unique roles; 1–4 entries including `default` |
 | `workspace` | Optional flat checkout slots: `key`, optional `label`, `path` |
 | `triggers` | Optional portable `kind: gitrepo` semantic trigger definitions |
 | `actions` | Optional keyed `kind: gitrepo` capability groups |
 | `connectors` | Optional remote MCP capability/resource requirements |
 | `knowledgeSources` | Optional structured external knowledge references |
+
+### Repository-owned icon
+
+```yaml
+icon: ./assets/icon.svg
+```
+
+New repositories include the default robot SVG at that path. Replace the file
+or reference your own artwork. PNG/WebP must be square; 512 × 512 pixels is
+recommended, not required. Transparent backgrounds are supported. SVG needs a
+square viewBox. Prefer simple shapes, adequate padding, and no fine text.
+Icons are at most 256 KiB and 4096 pixels per edge. Files must be regular,
+inside the repository, and match their declared extension. Missing or invalid
+referenced files fail source validation. SVG may use ordinary colors, groups,
+transforms and local gradient references, but no scripts, external resources,
+event handlers, animation, embedded images, style elements, or foreignObject.
+Inline safe presentation styles are accepted. No remote URLs or credentials.
+Omit `icon` for the generic fallback. Icons publish with source revisions;
+the platform does not generate or regenerate them.
+
 
 Minimal definition:
 

@@ -20,7 +20,7 @@ Run these commands from the bot repository root, using the harness's shell tool:
 
 ```sh
 node --version
-TOOLS='https://github.com/librebot-work/tools/archive/5bf5ffdde6f50d745b105c66732083e4d33a520d.tar.gz'
+TOOLS='https://github.com/librebot-work/tools/archive/46c5e139d1542f42798606d357a7621eda938024.tar.gz'
 npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
@@ -32,6 +32,7 @@ Node.js 24 or newer is required. Package acquisition needs network access; respe
 | Requested change | Source to edit |
 | --- | --- |
 | Display name, description, model roles and requirements | `bot.yaml` |
+| Bot icon | `bot.yaml` → `icon` and its referenced SVG, PNG, or WebP file |
 | Main behavior, policies, output expectations | `instructions.md` |
 | Workspace paths, portable repository triggers and action groups, remote MCP definitions | `bot.yaml` |
 | Knowledge documents and binary assets | `knowledge/` |
@@ -47,6 +48,7 @@ Keep these invariants:
 - Built-in tools are always enabled. Do not add a top-level `tools` field. `actions[].capabilities` and `connectors[].tools` are separate valid declarations; request only needed capabilities.
 - Never store credentials or instance bindings in source. Workspace entries have explicit `key`, optional `label`, and `path`; actions have `key`, `kind: gitrepo`, optional `label`, and non-empty `capabilities`; triggers have explicit `key` and `kind: gitrepo` with semantic events. Preserve keys unless deliberately changing identity. Connectors retain unique labels. Portable `knowledgeSources[].id` values remain stable.
 - Use canonical relative workspace paths such as `./repo`. Avoid reserved, duplicate, or overlapping mounts. Bind providers, connections, repository targets, and checkout selection separately in instance configuration.
+- New source trees include `icon: ./assets/icon.svg` and the default robot SVG. Replace that file or change the path; generate artwork with the developer's chosen tools, not a platform icon-generation endpoint. Use square images, ideally 512 × 512 for PNG/WebP, or a square SVG viewBox. See source-format guidance for accepted safety and size limits.
 - Use `SKILL.md`, not `instructions.md`, for a local skill entrypoint. Do not put the harness's own installed editing skill into the bot's runtime skills unless the developer explicitly wants the bot to have that capability.
 - `knowledge/README.md` is an index, not ingested knowledge. Links in it are not automatically fetched. Use `knowledgeSources` for external resources and Git repositories.
 - Remote MCP connectors may declare an HTTPS `endpoint` and capability requirements. Do not add local `command`/`args`/stdio servers, credentials, or a speculative `plugins/` configuration.
