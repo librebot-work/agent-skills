@@ -32,9 +32,9 @@ The only top-level keys are:
 | `name` | Required display name, not the bot's URL handle |
 | `description` | Required non-empty description |
 | `modelRoles` | Required unique roles; 1–4 entries including `default` |
-| `workspace` | Optional mount requirements using canonical relative `path` |
-| `triggers` | Optional GitHub trigger definitions |
-| `githubActions` | Optional native GitHub capability names |
+| `workspace` | Optional flat checkout slots: `key`, optional `label`, `path` |
+| `triggers` | Optional portable `kind: gitrepo` semantic trigger definitions |
+| `actions` | Optional keyed `kind: gitrepo` capability groups |
 | `connectors` | Optional remote MCP capability/resource requirements |
 | `knowledgeSources` | Optional structured external knowledge references |
 
@@ -43,13 +43,13 @@ Minimal definition:
 ```yaml
 formatVersion: 1
 name: Issue assistant
-description: Helps triage GitHub issues.
+description: Helps triage repository issues.
 modelRoles:
   - role: default
     label: Main
 workspace: []
 triggers: []
-githubActions: []
+actions: []
 connectors: []
 ```
 
@@ -63,18 +63,22 @@ Keep existing role IDs stable. A trigger's `deciderRole`, if specified, must mat
 
 ### Workspace, triggers, and capabilities
 
-- A workspace entry is `{ path: ./repo }`, without a UUID. Use a relative, canonical path; the validator also checks reservations, overlap, duplicates, and depth. The actual repository binding belongs to the instance configuration.
-- Trigger fields include `label`, `kind: github`, `eventTypes`, and `deciderInstructions`, with optional `description`, `repository`, `inputs`, `deciderRole`, and `enabledByDefault`. Use the actual event names and input semantics from the existing bot and platform; do not guess new supported events. Labels must be unique. A repository selector uses `mode: any` or `mode: pinned`, with `fullName` for a pinned repository.
-- Native `githubActions` values are `read_issue`, `push_branch`, `pull_request`, `comment_issue`, `search_issues`, `read_pull_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, and `update_issue_title`. A trigger does not itself authorize write operations. Native GitHub operations use the linked GitHub App and bound repository, not an MCP connector. Body/title edits are independent issue-only capabilities requiring linked-user push access or higher and App Issues write permission. Bodies are replaced exactly (empty clears); titles must be non-empty.
+- Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
+- Triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. There is no repository pin or source wrapper.
+- Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, and `update_issue_title`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
 
-Preserve mount paths and trigger/connector labels unless deliberately changing those declarations. The platform owns their stable IDs; internal IDs shown by `preview` are not source configuration.
+Keys use letters/digits followed by letters/digits, `.`, `_`, or `-`, up to 64 characters, and must be unique within each section. Preserve these keys when editing labels or paths. Connector identity remains label-based.
+The sections have independent key namespaces: a workspace, action, and trigger
+may use the same key without becoming linked. There is no root `resources`
+array, `workspace.checkouts` wrapper, or checkout field in an action declaration.
+An optional checkout is selected only in the installation's action binding.
 
 ### Native GitHub comment authority
 
-Declare `read_issue` for issue/PR conversation comments and
-`read_pull_request` for PR reviews. Inline review comments are not returned.
-No additional capability name or write grant is needed for author context.
+Declare `read_issue` for issue conversation comments and
+`read_change_request` for pull-request feedback. Select `comments`,
+`discussions`, or `feedback` explicitly; inline review discussions are separate.
 
 Native results preserve author logins and add stable numeric `authorId`.
 The issue/PR creator also has `authorId`. Each comment/review includes
@@ -82,8 +86,9 @@ The issue/PR creator also has `authorId`. Each comment/review includes
 optional `authorAssociation`, and `repositoryAuthority`:
 `permission`, `roleName`, `canPush`, `checkedAt`, and `status`
 (`verified` or `unknown`). For PRs, `isIssueAuthor` compares to the PR creator.
-Issue read text labels each comment's machine-readable context separately
-from its untrusted body; PR review results expose these fields in JSON.
+Common tools return structured JSON, keeping bodies separate from available
+author context. These enriched authority fields are currently GitHub evidence;
+never infer equivalent verified authority from a GitLab username or membership claim.
 
 When writing a bot's decision policy:
 
@@ -108,25 +113,50 @@ This is context, not a server-enforced workflow transition. Re-read current
 authority before authorization-sensitive action; platform-side transition
 enforcement must independently revalidate it.
 
-### Native GitHub reactions
+### Portable repository declaration
+```yaml
+workspace:
+  - key: source
+    path: ./repo
+actions:
+  - key: issues
+    kind: gitrepo
+    capabilities: [read_issue, react_issue, propose_change]
+triggers:
+  - key: incoming-issue
+    label: Incoming issue
+    kind: gitrepo
+    eventTypes: [issue.opened, issue.comment.created]
+    deciderInstructions: Decide whether assistance is needed.
+```
 
-Declare `react_issue` in `githubActions` to expose `github_react_issue`; declare
-`read_issue` too when the bot must discover issue conversation comment IDs.
-The actual repository and mount ID come from the instance binding and native
-tool schema, not an owner/repo field in tool input. The linked user needs live
-read access or higher and the App needs Issues write permission; workspace
-checkout separately needs Contents read.
+Semantic events are `issue.opened`, `issue.updated`, `issue.closed`,
+`issue.reopened`, `issue.comment.created`, `issue.comment.updated`,
+`change_request.opened`, `change_request.updated`, `change_request.closed`,
+`change_request.reopened`, `change_request.merged`, `change_request.commits_updated`,
+`change_request.comment.created`, `change_request.comment.updated`,
+`change_request.approval_changed`, and `repository.pushed`.
 
-- Add: pass `mountId`, exactly one of `issueNumber` (issue or PR body) or
-  `commentId` (issue/PR conversation comment), and `content`. `operation` defaults
-  to `"add"`. Supported content: `+1`, `-1`, `laugh`, `confused`, `heart`,
-  `hooray`, `rocket`, `eyes`. Repeating an existing reaction returns its receipt.
-- Remove: pass `operation: "remove"`, the same target, and `reactionId` from a
-  prior add receipt. Omit `content`. Never invent reaction IDs or assume a
-  reaction ID belongs to another target. Missing or inaccessible reactions
-  return errors; acknowledge removal only after a successful tool result.
-- Review comments are not supported. Reactions use the App identity, not the
-  linked user's personal identity. No new capability name is needed for removal.
+The platform binds workspace, actions, and triggers independently to a provider,
+connection, and target `{id, path}`. `push_branch` requires a selected declared,
+bound checkout matching the action target. Other capabilities need no checkout.
+`propose_change` accepts an explicit branch or uses the selected checkout branch.
+Native `repo_*` tools require `action: issues`; never pass `mountId`, provider,
+or freeform repository selectors. `repo_react_issue` requires `react_issue`.
+Provider-specific `githubActions`/`gitlabActions`, old provider kinds, IDs,
+repository pins, and messaging declarations are rejected. Future messaging
+actions/triggers will use `kind: messaging` and `conversation.kind: group`,
+but no messaging connector is implemented.
+
+`repo_read_change_request` accepts sections `details`, `files`, `feedback`,
+`commits`, `comments`, `discussions`, `approvals`, and `checks`.
+GitHub feedback uses model `review_submissions`; GitLab feedback and approvals
+use `approval_state`. Do not describe discussions as review submissions or
+GitLab approval state as equivalent to GitHub review history. GitHub approvals
+derive observed reviewer state but leave required/remaining approval counts and
+requirements satisfaction unknown; branch rules are not resolved.
+GitHub `read_change_request` requires Checks read, Issues read, and Pull requests
+read. API-only issue reads and proposals do not implicitly require Contents read.
 
 Capability declarations belong in `bot.yaml`; instructions describing when to
 react or remove a reaction belong in `instructions.md`. Do not put tool-call

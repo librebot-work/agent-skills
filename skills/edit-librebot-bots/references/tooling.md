@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. The `TOOLS` assignment in [SKILL.md](../SKILL.md) pins the CLI to a commit of the public [librebot-work/tools](https://github.com/librebot-work/tools) repository, whose package version is `0.2.5`. Fetching this package does not require `@librebot/tools` to be published on npm. Never silently replace the pin with `main` or `latest`.
+Use Node.js 24 or newer and Git. The CLI is pinned to tools commit `5bf5ffdde6f50d745b105c66732083e4d33a520d` (package version `0.3.0`). Set `TOOLS` to the immutable archive URL shown in [SKILL.md](../SKILL.md). The platform vendors the same release as `librebot-tools-0.3.0.tgz`; an explicitly supplied matching local tarball may be used offline. Do not substitute `main`, `latest`, or an older pin.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals.
 
@@ -22,11 +22,24 @@ The source parser and validator do not execute bot prompts, shell commands from 
 
 These are the schemas shipped with the pinned tool, not a generic agent or MCP schema:
 
-- [bot.yaml schema](https://github.com/librebot-work/tools/blob/50154f20633fa61c73cf3a8e868469eb083b8edc/schema/v1/bot-yaml-schema.json)
-- [skills/sources.yaml schema](https://github.com/librebot-work/tools/blob/50154f20633fa61c73cf3a8e868469eb083b8edc/schema/v1/skills-sources-schema.json)
-- [Source tooling documentation](https://github.com/librebot-work/tools/blob/50154f20633fa61c73cf3a8e868469eb083b8edc/README.md)
+- The supplied tarball contains `schema/v1/bot-yaml-schema.json`.
+- It also contains `schema/v1/skills-sources-schema.json`.
+- The bundled `README.md` documents the matching source tooling.
 
 An editor schema is useful for completion, but is not a substitute for `validate`. Semantic validation checks relationships and constraints not fully expressed by JSON Schema.
+
+The matching source format uses independent keyed `workspace`, `actions`, and
+`triggers` sections. Workspace is flat; root `resources`, provider-specific action
+arrays, nested checkout declarations, and messaging declarations are rejected.
+See [source-format.md](source-format.md) for the accepted declarations.
+Runtime native repository calls use `repo_*` names and a required `action`
+selector for a declared action group, not a workspace or freeform repository.
+The common change-request sections are `details`, `files`, `feedback`, `commits`,
+`comments`, `discussions`, `approvals`, and `checks`. Feedback preserves the
+provider model: GitHub `review_submissions`, GitLab `approval_state`.
+GitHub derived approval state does not resolve branch-rule requirements.
+GitHub `read_change_request` requires Checks read, Issues read, and Pull requests
+read; declaration validation does not prove the installation grants them.
 
 ## Publication boundary
 

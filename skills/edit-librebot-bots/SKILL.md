@@ -20,7 +20,7 @@ Run these commands from the bot repository root, using the harness's shell tool:
 
 ```sh
 node --version
-TOOLS='github:librebot-work/tools#50154f20633fa61c73cf3a8e868469eb083b8edc'
+TOOLS='https://github.com/librebot-work/tools/archive/5bf5ffdde6f50d745b105c66732083e4d33a520d.tar.gz'
 npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
@@ -33,7 +33,7 @@ Node.js 24 or newer is required. Package acquisition needs network access; respe
 | --- | --- |
 | Display name, description, model roles and requirements | `bot.yaml` |
 | Main behavior, policies, output expectations | `instructions.md` |
-| Workspace paths, GitHub triggers, native GitHub actions, remote MCP definitions | `bot.yaml` |
+| Workspace paths, portable repository triggers and action groups, remote MCP definitions | `bot.yaml` |
 | Knowledge documents and binary assets | `knowledge/` |
 | Structured external knowledge references | `bot.yaml` → `knowledgeSources` |
 | A local procedural skill and its supporting files | `skills/<skill-id>/SKILL.md` and files beside it |
@@ -44,9 +44,9 @@ Keep these invariants:
 
 - Preserve `formatVersion: 1` and existing declarations unless the requested change requires otherwise. Unknown `bot.yaml` keys are errors. Do not invent configuration fields or use a generic MCP configuration format.
 - Keep a unique `default` model role. The allowed role IDs are `default`, `smol`, `slow`, and `plan`; trigger decider roles must be declared by this bot. Model roles express requirements, not provider credentials or instance model bindings.
-- Built-in tools are always enabled. Do not add a top-level `tools` field. `githubActions` and `connectors[].tools` are separate, valid capability declarations; request only the capabilities needed for the change.
-- Do not put visibility, handles, platform UUIDs, tokens, private keys, authorization headers, or credential-bearing URLs in the repository. Workspace entries use `path`; triggers and connectors use unique `label` values, without `id`. Preserve their paths/labels unless intentionally changing the declaration's identity. Portable `knowledgeSources[].id` values are valid and should remain stable.
-- Use canonical relative workspace paths such as `./repo`, not `/repo`. Avoid reserved, duplicate, or overlapping mounts; let semantic validation resolve the exact constraints.
+- Built-in tools are always enabled. Do not add a top-level `tools` field. `actions[].capabilities` and `connectors[].tools` are separate valid declarations; request only needed capabilities.
+- Never store credentials or instance bindings in source. Workspace entries have explicit `key`, optional `label`, and `path`; actions have `key`, `kind: gitrepo`, optional `label`, and non-empty `capabilities`; triggers have explicit `key` and `kind: gitrepo` with semantic events. Preserve keys unless deliberately changing identity. Connectors retain unique labels. Portable `knowledgeSources[].id` values remain stable.
+- Use canonical relative workspace paths such as `./repo`. Avoid reserved, duplicate, or overlapping mounts. Bind providers, connections, repository targets, and checkout selection separately in instance configuration.
 - Use `SKILL.md`, not `instructions.md`, for a local skill entrypoint. Do not put the harness's own installed editing skill into the bot's runtime skills unless the developer explicitly wants the bot to have that capability.
 - `knowledge/README.md` is an index, not ingested knowledge. Links in it are not automatically fetched. Use `knowledgeSources` for external resources and Git repositories.
 - Remote MCP connectors may declare an HTTPS `endpoint` and capability requirements. Do not add local `command`/`args`/stdio servers, credentials, or a speculative `plugins/` configuration.
@@ -55,7 +55,7 @@ Keep these invariants:
 For a brand-new source tree only, scaffold into an empty destination, then replace the sample prompt, knowledge, and demo skill with the requested definition:
 
 ```sh
-npx --yes --package="$TOOLS" librebot scaffold ./new-bot --name 'Issue assistant' --description 'Helps triage GitHub issues.'
+npx --yes --package="$TOOLS" librebot scaffold ./new-bot --name 'Issue assistant' --description 'Helps triage repository issues.'
 ```
 
 Do not use `--force` on an existing bot. Creating a local scaffold does not provision a Librebot bot or its Git repository.
