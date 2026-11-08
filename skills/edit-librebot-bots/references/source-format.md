@@ -6,6 +6,7 @@ Use the pinned Librebot parser and semantic validator as the source of truth. Re
 
 ```text
 bot.yaml
+README.md                   # required user-facing usage Markdown, published on bot page
 instructions.md
 assets/
   icon.svg                 # default replaceable bot icon
@@ -23,6 +24,12 @@ skills/
 ```
 
 The source repository describes the shared bot. Account credentials, repository bindings for workspace mounts, concrete instance model choices, handle, visibility, and adopted revision pins are managed outside these files.
+
+## Required root `README.md`
+
+Every bot source must include a root `README.md` containing UTF-8 Markdown that explains how to use the bot. Its content must be non-empty after trimming and at most 100000 characters. Missing, empty, or invalid content fails source validation for `README.md`; do not omit or delete this file.
+
+The root README is published on the bot page as user-facing presentation only. It is never included in the bot prompt or ingested as knowledge. Put behavioral instructions in `instructions.md` and knowledge content under `knowledge/`. The separate `knowledge/README.md` is only a knowledge index, not a substitute for the required root README.
 
 ## `bot.yaml`
 
@@ -189,7 +196,7 @@ or removing a capability does not automatically upgrade running instances.
 
 ## Knowledge
 
-Files below `knowledge/`, other than its root `README.md`, become knowledge entries. Small UTF-8 text is inlined; larger or binary content is represented by content-addressed assets. Keep meaningful filenames and inspect binary changes. Links in the index are documentation only.
+Files below `knowledge/`, other than its root `README.md`, become knowledge entries. Small UTF-8 text is inlined; larger or binary content is represented by content-addressed assets. Keep meaningful filenames and inspect binary changes. Links in the index are documentation only. This `knowledge/README.md` index is distinct from the mandatory repository-root `README.md` published on the bot page; neither README is ingested as knowledge.
 
 Use structured declarations for external knowledge, for example:
 

@@ -1,6 +1,6 @@
 ---
 name: edit-librebot-bots
-description: Edit Librebot bot repositories safely using bot.yaml, instructions.md, knowledge files, local skills, external skill sources, triggers, workspace declarations, and remote MCP connectors. Use when creating or changing a Librebot bot definition, diagnosing source validation errors, or reviewing a bot change before publishing. Validate and preview with Librebot's source tooling, not YAML syntax checks alone.
+description: Edit Librebot bot repositories safely using bot.yaml, the required user-facing README.md, instructions.md, knowledge files, local skills, external skill sources, triggers, workspace declarations, and remote MCP connectors. Use when creating or changing a Librebot bot definition, diagnosing source validation errors, or reviewing a bot change before publishing. Validate and preview with Librebot's source tooling, not YAML syntax checks alone.
 license: MIT
 ---
 
@@ -33,6 +33,7 @@ Node.js 24 or newer is required. Package acquisition needs network access; respe
 | --- | --- |
 | Display name, description, model roles and requirements | `bot.yaml` |
 | Bot icon | `bot.yaml` → `icon` and its referenced SVG, PNG, or WebP file |
+| User-facing usage documentation published on the bot page | Required root `README.md` |
 | Main behavior, policies, output expectations | `instructions.md` |
 | Workspace paths, portable repository triggers and action groups, remote MCP definitions | `bot.yaml` |
 | Knowledge documents and binary assets | `knowledge/` |
@@ -50,11 +51,12 @@ Keep these invariants:
 - Use canonical relative workspace paths such as `./repo`. Avoid reserved, duplicate, or overlapping mounts. Bind providers, connections, repository targets, and checkout selection separately in instance configuration.
 - New source trees include `icon: ./assets/icon.svg` and the default robot SVG. Replace that file or change the path; generate artwork with the developer's chosen tools, not a platform icon-generation endpoint. Use square images, ideally 512 × 512 for PNG/WebP, or a square SVG viewBox. See source-format guidance for accepted safety and size limits.
 - Use `SKILL.md`, not `instructions.md`, for a local skill entrypoint. Do not put the harness's own installed editing skill into the bot's runtime skills unless the developer explicitly wants the bot to have that capability.
+- Keep the required root `README.md`: UTF-8 Markdown explaining how to use the bot, non-empty after trimming, and at most 100000 characters. It is published on the bot page for users, never included in the prompt or ingested as knowledge. Do not omit, delete, or replace it with `knowledge/README.md`.
 - `knowledge/README.md` is an index, not ingested knowledge. Links in it are not automatically fetched. Use `knowledgeSources` for external resources and Git repositories.
 - Remote MCP connectors may declare an HTTPS `endpoint` and capability requirements. Do not add local `command`/`args`/stdio servers, credentials, or a speculative `plugins/` configuration.
 - Keep files regular and self-contained. Symlinks are rejected. Inspect binary changes and sizes; a supported source file does not imply a particular runtime extraction result.
 
-For a brand-new source tree only, scaffold into an empty destination, then replace the sample prompt, knowledge, and demo skill with the requested definition:
+For a brand-new source tree only, scaffold into an empty destination, then adapt the required root usage `README.md` and replace the sample prompt, knowledge, and demo skill with the requested definition:
 
 ```sh
 npx --yes --package="$TOOLS" librebot scaffold ./new-bot --name 'Issue assistant' --description 'Helps triage repository issues.'
@@ -88,6 +90,7 @@ npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
 - Require validation to exit successfully with `ok: true`. On failure, address the reported `file`, `field`, and `message`; rerun after fixing the cause. A YAML linter alone does not check cross-file references, role bindings, asset limits, or skill locks.
+- Confirm root `README.md` is present, contains non-empty UTF-8 Markdown after trimming, explains how to use the bot, and is at most 100000 characters. It must remain separate from the prompt and knowledge, including the `knowledge/README.md` index; do not rely on older tooling to enforce this requirement.
 - Read warnings. Resolve change-related warnings or explain why a remaining warning is acceptable; do not hide the diagnostics.
 - Inspect the preview for the intended prompt, roles, triggers, workspace paths, capabilities, knowledge entries, skills, assets, and locks. Generated internal IDs in the preview are not fields to copy back into source.
 - Review the final diff, including added/untracked files and binary assets. Verify that no unrelated files, credentials, local harness configuration, missing vendor files, or accidental capability expansions will be committed.
