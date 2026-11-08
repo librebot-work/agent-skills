@@ -43,8 +43,8 @@ The only top-level keys are:
 | `icon` | Optional repository-relative SVG, PNG, or WebP file path |
 | `modelRoles` | Required unique roles; 1–4 entries including `default` |
 | `workspace` | Optional flat checkout slots: `key`, optional `label`, `path` |
-| `triggers` | Optional portable `kind: gitrepo` semantic trigger definitions |
-| `actions` | Optional keyed `kind: gitrepo` capability groups |
+| `triggers` | Optional portable `kind: gitrepo` or `kind: whatsapp` semantic trigger definitions |
+| `actions` | Optional keyed `kind: gitrepo` or `kind: whatsapp` capability groups |
 | `connectors` | Optional remote MCP capability/resource requirements |
 | `knowledgeSources` | Optional structured external knowledge references |
 
@@ -94,7 +94,7 @@ Keep existing role IDs stable. A trigger's `deciderRole`, if specified, must mat
 ### Workspace, triggers, and capabilities
 
 - Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
-- Triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. There is no repository pin or source wrapper.
+- Repository triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. WhatsApp triggers use `kind: whatsapp` and their own events as documented below. There is no repository pin or source wrapper.
 - Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, and `update_issue_title`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
 
@@ -174,9 +174,8 @@ bound checkout matching the action target. Other capabilities need no checkout.
 Native `repo_*` tools require `action: issues`; never pass `mountId`, provider,
 or freeform repository selectors. `repo_react_issue` requires `react_issue`.
 Provider-specific `githubActions`/`gitlabActions`, old provider kinds, IDs,
-repository pins, and messaging declarations are rejected. Future messaging
-actions/triggers will use `kind: messaging` and `conversation.kind: group`,
-but no messaging connector is implemented.
+repository pins, and the obsolete `kind: messaging` are rejected. WhatsApp
+actions use `kind: whatsapp` as documented below.
 
 `repo_read_change_request` accepts sections `details`, `files`, `feedback`,
 `commits`, `comments`, `discussions`, `approvals`, and `checks`.
@@ -246,3 +245,16 @@ This is an example dependency, not a default requirement. Only add a dependency 
 ## Important limits
 
 The pinned tool checks additional constraints and cross-file references. In this version: model roles 1–4 including `default`; workspace mounts at most 10; triggers 20; connectors 50; knowledge entries 100; skills 100. A knowledge file may be at most 10 MiB; text inlining is limited to 100,000 bytes; each skill entrypoint is non-empty and at most 50,000 bytes; each skill supporting file is at most 1 MiB. The parsed draft also has a total size limit. Do not work around limits by splitting declarations or omitting intended files from validation.
+
+## WhatsApp action declarations (local tools 0.4.1)
+
+```yaml
+actions:
+  - key: messaging
+    kind: whatsapp
+    capabilities: [read_messages, send_text, set_reaction, remove_reaction]
+```
+
+Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority. All authoring requires the supplied local `librebot-tools-0.4.1.tgz`, including bots without WhatsApp.
+
+WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, and `deciderInstructions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.

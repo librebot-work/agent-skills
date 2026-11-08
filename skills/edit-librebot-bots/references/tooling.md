@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. The CLI is pinned to tools commit `46c5e139d1542f42798606d357a7621eda938024` (package version `0.4.0`), which includes repository-owned icons. Set `TOOLS` to the immutable archive URL shown in [SKILL.md](../SKILL.md). The platform vendors the same release as `librebot-tools-0.4.0.tgz`; an explicitly supplied matching local tarball may be used offline. Do not substitute `main`, `latest`, or an older pin.
+Use Node.js 24 or newer and Git. All bot authoring requires the explicitly supplied local `librebot-tools-0.4.1.tgz`, including scaffold, skill resolution, validation, and preview for bots without messaging. This local package includes required root README validation and portable WhatsApp declarations; the historical `46c5e139d1542f42798606d357a7621eda938024` archive (0.4.0) does not implement this contract. No published immutable artifact is available for this contract. Set `TOOLS` to the supplied tarball's absolute path as shown in [SKILL.md](../SKILL.md). If it is missing, request it; do not substitute a public URL, `main`, `latest`, or an older package.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals.
 
@@ -20,7 +20,7 @@ The source parser and validator do not execute bot prompts, shell commands from 
 
 ## Exact schema references
 
-These are the schemas shipped with the pinned tool, not a generic agent or MCP schema:
+These are the schemas shipped with the required local tool, not a generic agent or MCP schema:
 
 - The supplied tarball contains `schema/v1/bot-yaml-schema.json`.
 - It also contains `schema/v1/skills-sources-schema.json`.
@@ -30,7 +30,10 @@ An editor schema is useful for completion, but is not a substitute for `validate
 
 The matching source format uses independent keyed `workspace`, `actions`, and
 `triggers` sections. Workspace is flat; root `resources`, provider-specific action
-arrays, nested checkout declarations, and messaging declarations are rejected.
+arrays, nested checkout declarations, and obsolete `kind: messaging` are rejected.
+Actions and triggers support `kind: gitrepo` and `kind: whatsapp`, with separate
+capability and event namespaces. Owner bindings and consent grant independent
+runtime authority; portable declarations do not.
 See [source-format.md](source-format.md) for the accepted declarations.
 Runtime native repository calls use `repo_*` names and a required `action`
 selector for a declared action group, not a workspace or freeform repository.
