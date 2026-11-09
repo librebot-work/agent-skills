@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. All bot authoring requires the explicitly supplied local `librebot-tools-0.4.1.tgz`, including scaffold, skill resolution, validation, and preview for bots without messaging. This local package includes required root README validation and portable WhatsApp declarations; the historical `46c5e139d1542f42798606d357a7621eda938024` archive (0.4.0) does not implement this contract. No published immutable artifact is available for this contract. Set `TOOLS` to the supplied tarball's absolute path as shown in [SKILL.md](../SKILL.md). If it is missing, request it; do not substitute a public URL, `main`, `latest`, or an older package.
+Use Node.js 24 or newer and Git. All bot authoring requires the explicitly supplied local `librebot-tools-0.4.2.tgz`, including scaffold, skill resolution, validation, and preview for bots without messaging. This local package includes required root README validation, a user-manual README scaffold, and portable WhatsApp declarations; the historical `46c5e139d1542f42798606d357a7621eda938024` archive (0.4.0) does not implement this contract. No published immutable artifact is available for this contract. Set `TOOLS` to the supplied tarball's absolute path as shown in [SKILL.md](../SKILL.md). If it is missing, request it; do not substitute a public URL, `main`, `latest`, or an older package.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals.
 
@@ -10,7 +10,7 @@ Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep th
 | --- | --- |
 | `validate <dir> --json` | Validates source shape, semantics, cross-file references, limits, and locks. Returns `ok` and diagnostics; invalid source exits nonzero. |
 | `preview <dir> --json` | Validates and prints the resolved definition, asset hashes/sizes, skill files, warnings, and lock metadata. Does not run the bot. |
-| `scaffold <dir> --name 'Name' --description 'Description'` | Writes a new skeleton with example content; use only an empty destination. Does not provision a platform bot. |
+| `scaffold <dir> --name 'Name' --description 'Description'` | Writes a new skeleton with example content and a user-manual `README.md` whose placeholders must be replaced; use only an empty destination. Does not provision a platform bot. |
 | `resolve-skills <dir> --network --vendor` | Installs selected external skill content locally and produces a lock plus vendor tree. Existing locks are reused where valid. |
 | `resolve-skills <dir> --update --network --vendor` | Intentionally updates existing skill dependency resolutions. |
 

@@ -6,7 +6,7 @@ Use the pinned Librebot parser and semantic validator as the source of truth. Re
 
 ```text
 bot.yaml
-README.md                   # required user-facing usage Markdown, published on bot page
+README.md                   # required user manual, published on bot page
 instructions.md
 assets/
   icon.svg                 # default replaceable bot icon
@@ -30,6 +30,8 @@ The source repository describes the shared bot. Account credentials, repository 
 Every bot source must include a root `README.md` containing UTF-8 Markdown that explains how to use the bot. Its content must be non-empty after trimming and at most 100000 characters. Missing, empty, or invalid content fails source validation for `README.md`; do not omit or delete this file.
 
 The root README is published on the bot page as user-facing presentation only. It is never included in the bot prompt or ingested as knowledge. Put behavioral instructions in `instructions.md` and knowledge content under `knowledge/`. The separate `knowledge/README.md` is only a knowledge index, not a substitute for the required root README.
+
+Write it as a user manual: what the bot is for, what it is not for, the AI access and connections users need, setup steps, example requests or triggering events, and every external change the bot makes. See [readme.md](readme.md) for the required sections and the mapping from declarations to user setup.
 
 ## `bot.yaml`
 
@@ -246,7 +248,7 @@ This is an example dependency, not a default requirement. Only add a dependency 
 
 The pinned tool checks additional constraints and cross-file references. In this version: model roles 1–4 including `default`; workspace mounts at most 10; triggers 20; connectors 50; knowledge entries 100; skills 100. A knowledge file may be at most 10 MiB; text inlining is limited to 100,000 bytes; each skill entrypoint is non-empty and at most 50,000 bytes; each skill supporting file is at most 1 MiB. The parsed draft also has a total size limit. Do not work around limits by splitting declarations or omitting intended files from validation.
 
-## WhatsApp action declarations (local tools 0.4.1)
+## WhatsApp action declarations (local tools 0.4.2)
 
 ```yaml
 actions:
@@ -255,6 +257,6 @@ actions:
     capabilities: [read_messages, send_text, set_reaction, remove_reaction]
 ```
 
-Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority. All authoring requires the supplied local `librebot-tools-0.4.1.tgz`, including bots without WhatsApp.
+Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority. All authoring requires the supplied local `librebot-tools-0.4.2.tgz`, including bots without WhatsApp.
 
 WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, and `deciderInstructions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.

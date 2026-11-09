@@ -20,7 +20,7 @@ The repository is private, so installation requires GitHub repository access and
 
 Ask your agent to use `edit-librebot-bots` when changing a bot. Source validation requires Node.js 24 or newer; the skill uses a pinned version of [Librebot's tools](https://github.com/librebot-work/tools).
 
-Details: [source format](skills/edit-librebot-bots/references/source-format.md) · [tooling and schemas](skills/edit-librebot-bots/references/tooling.md).
+Details: [source format](skills/edit-librebot-bots/references/source-format.md) · [writing the bot README](skills/edit-librebot-bots/references/readme.md) · [tooling and schemas](skills/edit-librebot-bots/references/tooling.md).
 
 ## Maintenance
 
