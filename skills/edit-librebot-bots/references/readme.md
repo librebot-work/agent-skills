@@ -42,6 +42,14 @@ Derive requirements from `librebot preview . --json`, not from memory. Each decl
 
 Mark a connection optional only if the bot still does useful work without it, and say what is lost. Never ask users to put tokens or secrets anywhere other than Librebot's connection settings.
 
+For `merge_change_request`, require a GitHub App connection (GitLab is not
+supported) and explain its Contents/Pull requests write and Checks/Issues/
+Administration read permissions. State that proposing a PR authorizes durable
+monitoring and conditional automatic merging even after the task finishes.
+Explain CI/review/conversation/policy blockers and that no protection bypass,
+self-approval, shell `gh`, or workspace credentials are needed. A CI trigger
+is optional for native monitoring; do not require one in setup instructions.
+
 ## Example
 
 ```markdown

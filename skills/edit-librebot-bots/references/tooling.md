@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. All bot authoring requires the explicitly supplied local `librebot-tools-0.4.3.tgz`, including scaffold, skill resolution, validation, and preview for bots without messaging. This local package includes required root README validation, a user-manual README scaffold, portable WhatsApp declarations, and the `publish_attachments` repository capability; the historical `46c5e139d1542f42798606d357a7621eda938024` archive (0.4.0) does not implement this contract. No published immutable artifact is available for this contract. Set `TOOLS` to the supplied tarball's absolute path as shown in [SKILL.md](../SKILL.md). If it is missing, request it; do not substitute a public URL, `main`, `latest`, or an older package.
+Use Node.js 24 or newer and Git. All bot authoring requires the explicitly supplied local `librebot-tools-0.4.4.tgz`, including scaffold, skill resolution, validation, and preview for bots without messaging. This local package accepts `merge_change_request` and `change_request.checks_updated` alongside the existing source contract; older archives do not support native PR monitoring and merging declarations. No published immutable artifact is available for this contract. Set `TOOLS` to the supplied tarball's absolute path as shown in [SKILL.md](../SKILL.md). If it is missing, request it; do not substitute a public URL, `main`, `latest`, or an older package.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals.
 
@@ -43,6 +43,11 @@ provider model: GitHub `review_submissions`, GitLab `approval_state`.
 GitHub derived approval state does not resolve branch-rule requirements.
 GitHub `read_change_request` requires Checks read, Issues read, and Pull requests
 read; declaration validation does not prove the installation grants them.
+Native GitHub merging additionally requires Contents write, Pull requests write,
+Checks read, Issues read, and Administration read on the App installation plus
+the linked owner's live push, maintain, or admin authority. Administration read
+is for policy visibility, not administrator bypass. Validation/preview cannot
+prove live CI, review, conversation, or branch-policy eligibility.
 
 ## Publication boundary
 

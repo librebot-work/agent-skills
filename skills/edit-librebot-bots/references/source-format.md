@@ -97,7 +97,7 @@ Keep existing role IDs stable. A trigger's `deciderRole`, if specified, must mat
 
 - Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
 - Repository triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. WhatsApp triggers use `kind: whatsapp` and their own events as documented below. There is no repository pin or source wrapper.
-- Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, `update_issue_title`, and `publish_attachments`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
+- Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, `update_issue_title`, `publish_attachments`, and `merge_change_request`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
 - `publish_attachments` is GitHub-only (GitLab bindings are rejected). Its `repo_publish_attachments` tool uploads up to 10 task-local `.svg`/`.png` files (10 MiB each) as GitHub issue attachments and posts one comment whose `body` embeds them with `{{url:<id>}}` placeholders; unreferenced files are appended as images. Optional `transition: {add, remove}` changes labels only after the comment is confirmed and requires `update_issue_labels` in the same group. Retries with the same inputs reuse finished uploads and the posted comment. The owner must link an attachment upload token on the GitHub connection; bot source never contains credentials. Use it to publish generated artifacts instead of committing them or creating artifact branches.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
 
@@ -168,7 +168,7 @@ Semantic events are `issue.opened`, `issue.updated`, `issue.closed`,
 `change_request.opened`, `change_request.updated`, `change_request.closed`,
 `change_request.reopened`, `change_request.merged`, `change_request.commits_updated`,
 `change_request.comment.created`, `change_request.comment.updated`,
-`change_request.approval_changed`, and `repository.pushed`.
+`change_request.approval_changed`, `change_request.checks_updated`, and `repository.pushed`.
 
 The platform binds workspace, actions, and triggers independently to a provider,
 connection, and target `{id, path}`. `push_branch` requires a selected declared,
@@ -194,6 +194,38 @@ Capability declarations belong in `bot.yaml`; instructions describing when to
 react or remove a reaction belong in `instructions.md`. Do not put tool-call
 arguments such as `operation` or `reactionId` into the capability list. Adding
 or removing a capability does not automatically upgrade running instances.
+
+### Native PR monitoring and merging
+
+`merge_change_request` is GitHub-only; GitLab bindings reject it. Add it to
+the Developer action group only when automatic merging is intended. With this
+grant, successful `repo_propose_change` calls automatically persist the PR
+association to the host-supplied task and action group. Check the proposal's
+monitor registration result; registration failures need fixing before relying
+on automatic merging. Arbitrary PR numbers or CI events cannot create monitors.
+
+The idle worker checks due records on a 60-second cadence after task completion
+and restarts. It uses native tools to reassess the current head and merge only
+when CI and repository requirements permit, then durably resumes the original
+task with a confirmed receipt or changed blocker. Failed CI remains watched;
+new commits invalidate the old assessment. No agent turn must wait forever.
+`change_request.checks_updated` can also drive a repository trigger, but the
+durable monitor does not require a trigger subscription.
+
+For explicit native calls, `repo_merge_change_request` takes `action`,
+`changeRequestNumber`, the verified 40-hex `headSha`, and optional `method`
+(`merge`, `squash`, or `rebase`; omitted selects the first policy-allowed
+strategy in that order). `repo_watch_change_request` takes the same `action`
+and PR number with `op: register`, `status`, or `merge_if_ready`; it only
+operates on already-associated work. Never supply conversation or instance IDs.
+Report confirmed receipts, not attempted merges. Pending, failed, cancelled,
+missing required checks, stale heads, draft status, unmet reviews or unresolved
+conversations, protections, and unknown eligibility block merging. Never
+self-approve, bypass protections, run shell `gh`, or obtain alternate credentials.
+App and owner permissions are described in [tooling.md](tooling.md); all
+credentials stay in connection settings and host transport, not source,
+prompts, or workspaces.
+
 
 
 ## Knowledge
@@ -258,6 +290,6 @@ actions:
     capabilities: [read_messages, send_text, set_reaction, remove_reaction]
 ```
 
-Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority. All authoring requires the supplied local `librebot-tools-0.4.3.tgz`, including bots without WhatsApp.
+Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority. All authoring requires the supplied local `librebot-tools-0.4.4.tgz`, including bots without WhatsApp.
 
 WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, and `deciderInstructions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.
