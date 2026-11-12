@@ -1,6 +1,6 @@
 # Bot source format v1
 
-Use the pinned Librebot parser and semantic validator as the source of truth. Read the existing definition before applying these examples. Do not rewrite the whole bot to match a minimal example.
+Use the Librebot parser and semantic validator from `@librebot/tools@latest` as the source of truth. Read the existing definition before applying these examples. Do not rewrite the whole bot to match a minimal example.
 
 ## Repository layout
 
@@ -279,9 +279,9 @@ This is an example dependency, not a default requirement. Only add a dependency 
 
 ## Important limits
 
-The pinned tool checks additional constraints and cross-file references. In this version: model roles 1–4 including `default`; workspace mounts at most 10; triggers 20; connectors 50; knowledge entries 100; skills 100. A knowledge file may be at most 10 MiB; text inlining is limited to 100,000 bytes; each skill entrypoint is non-empty and at most 50,000 bytes; each skill supporting file is at most 1 MiB. The parsed draft also has a total size limit. Do not work around limits by splitting declarations or omitting intended files from validation.
+The tool checks additional constraints and cross-file references. In this version: model roles 1–4 including `default`; workspace mounts at most 10; triggers 20; connectors 50; knowledge entries 100; skills 100. A knowledge file may be at most 10 MiB; text inlining is limited to 100,000 bytes; each skill entrypoint is non-empty and at most 50,000 bytes; each skill supporting file is at most 1 MiB. The parsed draft also has a total size limit. Do not work around limits by splitting declarations or omitting intended files from validation.
 
-## WhatsApp action declarations (local tools 0.4.2)
+## WhatsApp action declarations
 
 ```yaml
 actions:
@@ -290,6 +290,6 @@ actions:
     capabilities: [read_messages, send_text, set_reaction, remove_reaction]
 ```
 
-Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority. All authoring requires the supplied local `librebot-tools-0.4.4.tgz`, including bots without WhatsApp.
+Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority.
 
 WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, and `deciderInstructions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.

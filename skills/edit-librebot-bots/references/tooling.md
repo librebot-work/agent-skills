@@ -2,9 +2,9 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. All bot authoring requires the explicitly supplied local `librebot-tools-0.4.4.tgz`, including scaffold, skill resolution, validation, and preview for bots without messaging. This local package accepts `merge_change_request` and `change_request.checks_updated` alongside the existing source contract; older archives do not support native PR monitoring and merging declarations. No published immutable artifact is available for this contract. Set `TOOLS` to the supplied tarball's absolute path as shown in [SKILL.md](../SKILL.md). If it is missing, request it; do not substitute a public URL, `main`, `latest`, or an older package.
+Use Node.js 24 or newer and Git. All bot authoring, including scaffold, skill resolution, validation, and preview, uses the `@librebot/tools` CLI published on npm. Always run `@librebot/tools@latest`: the platform publishes the tool version that matches its current source contract, and older versions may reject current declarations such as `merge_change_request` or `change_request.checks_updated`. Set `TOOLS='@librebot/tools@latest'` as shown in [SKILL.md](../SKILL.md). Do not substitute a local archive, a Git checkout, or a pinned older version. If npm cannot fetch the package, report that failure.
 
-Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals.
+Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the CLI version (`npm view @librebot/tools@latest version`) alongside validation results when it matters for a diagnosis.
 
 | Command | Result |
 | --- | --- |
@@ -20,11 +20,11 @@ The source parser and validator do not execute bot prompts, shell commands from 
 
 ## Exact schema references
 
-These are the schemas shipped with the required local tool, not a generic agent or MCP schema:
+These are the schemas shipped with the npm package, not a generic agent or MCP schema:
 
-- The supplied tarball contains `schema/v1/bot-yaml-schema.json`.
+- The package contains `schema/v1/bot-yaml-schema.json`.
 - It also contains `schema/v1/skills-sources-schema.json`.
-- The bundled `README.md` documents the matching source tooling.
+- Its `README.md` documents the matching source tooling.
 
 An editor schema is useful for completion, but is not a substitute for `validate`. Semantic validation checks relationships and constraints not fully expressed by JSON Schema.
 
