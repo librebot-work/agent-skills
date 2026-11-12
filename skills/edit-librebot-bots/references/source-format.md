@@ -1,6 +1,6 @@
 # Bot source format v1
 
-Use the Librebot parser and semantic validator from `@librebot/tools@latest` as the source of truth. Read the existing definition before applying these examples. Do not rewrite the whole bot to match a minimal example.
+Use the Librebot parser and semantic validator from `librebot-tools@latest` as the source of truth. Read the existing definition before applying these examples. Do not rewrite the whole bot to match a minimal example.
 
 ## Repository layout
 

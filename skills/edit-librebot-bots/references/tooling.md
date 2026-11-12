@@ -2,9 +2,9 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. All bot authoring, including scaffold, skill resolution, validation, and preview, uses the `@librebot/tools` CLI published on npm. Always run `@librebot/tools@latest`: the platform publishes the tool version that matches its current source contract, and older versions may reject current declarations such as `merge_change_request` or `change_request.checks_updated`. Set `TOOLS='@librebot/tools@latest'` as shown in [SKILL.md](../SKILL.md). Do not substitute a local archive, a Git checkout, or a pinned older version. If npm cannot fetch the package, report that failure.
+Use Node.js 24 or newer and Git. All bot authoring, including scaffold, skill resolution, validation, and preview, uses the `librebot-tools` CLI published on npm. Always run `librebot-tools@latest`: the platform publishes the tool version that matches its current source contract, and older versions may reject current declarations such as `merge_change_request` or `change_request.checks_updated`. Set `TOOLS='librebot-tools@latest'` as shown in [SKILL.md](../SKILL.md). Do not substitute a local archive, a Git checkout, or a pinned older version. If npm cannot fetch the package, report that failure.
 
-Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the CLI version (`npm view @librebot/tools@latest version`) alongside validation results when it matters for a diagnosis.
+Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the CLI version (`npm view librebot-tools@latest version`) alongside validation results when it matters for a diagnosis.
 
 | Command | Result |
 | --- | --- |

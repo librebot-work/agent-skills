@@ -18,7 +18,7 @@ The repository is private, so installation requires GitHub repository access and
 
 [**edit-librebot-bots**](skills/edit-librebot-bots/SKILL.md) guides source edits, semantic validation, resolved-definition review, external skill locking, and authorized Git publication. It keeps system metadata and credentials out of bot repositories and preserves running-instance pins.
 
-Ask your agent to use `edit-librebot-bots` when changing a bot. Source validation requires Node.js 24 or newer; the skill runs the latest [`@librebot/tools`](https://www.npmjs.com/package/@librebot/tools) from npm ([source](https://github.com/librebot-work/tools)).
+Ask your agent to use `edit-librebot-bots` when changing a bot. Source validation requires Node.js 24 or newer; the skill runs the latest [`librebot-tools`](https://www.npmjs.com/package/librebot-tools) from npm ([source](https://github.com/librebot-work/tools)).
 
 Details: [source format](skills/edit-librebot-bots/references/source-format.md) · [writing the bot README](skills/edit-librebot-bots/references/readme.md) · [tooling and schemas](skills/edit-librebot-bots/references/tooling.md).
 
