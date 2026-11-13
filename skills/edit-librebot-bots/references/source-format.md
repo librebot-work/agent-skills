@@ -195,29 +195,35 @@ react or remove a reaction belong in `instructions.md`. Do not put tool-call
 arguments such as `operation` or `reactionId` into the capability list. Adding
 or removing a capability does not automatically upgrade running instances.
 
-### Native PR monitoring and merging
+### Event-driven change-request follow-up and merging
 
 `merge_change_request` is GitHub-only; GitLab bindings reject it. Add it to
-the Developer action group only when automatic merging is intended. With this
-grant, successful `repo_propose_change` calls automatically persist the PR
-association to the host-supplied task and action group. Check the proposal's
-monitor registration result; registration failures need fixing before relying
-on automatic merging. Arbitrary PR numbers or CI events cannot create monitors.
+the Developer action group only when automatic merging is intended.
+Successful `repo_propose_change` calls return a durable task association in
+`result.association`: `{ associationId, changeRequestNumber, headSha, repository }`.
+Check this receipt; `associationError` means the proposal exists but its task
+association failed, so do not promise automatic continuation. An association
+does not itself subscribe to events, schedule a merge, or grant merge authority.
+Arbitrary PR numbers and untrusted webhook content cannot create associations.
 
-The idle worker checks due records on a 60-second cadence after task completion
-and restarts. It uses native tools to reassess the current head and merge only
-when CI and repository requirements permit, then durably resumes the original
-task with a confirmed receipt or changed blocker. Failed CI remains watched;
-new commits invalidate the old assessment. No agent turn must wait forever.
-`change_request.checks_updated` can also drive a repository trigger, but the
-durable monitor does not require a trigger subscription.
+Declare repository triggers for the relevant events, including
+`change_request.checks_updated` and review or change-request updates, and enable
+and bind them in instance settings. Give their decider instructions the intended
+follow-up policy. Matching events can resume the original task through its
+trusted association, including after task completion. They use the same normal
+webhook delivery, deduplication, authorization, decider, and dispatch guarantees
+as other repository triggers; there is no separate monitor, polling,
+reconciliation loop, or guaranteed eventual wake-up without a matching delivery.
+GitLab pipeline and merge-request events support this trigger workflow, but
+native GitLab merging remains unsupported.
 
-For explicit native calls, `repo_merge_change_request` takes `action`,
-`changeRequestNumber`, the verified 40-hex `headSha`, and optional `method`
-(`merge`, `squash`, or `rebase`; omitted selects the first policy-allowed
-strategy in that order). `repo_watch_change_request` takes the same `action`
-and PR number with `op: register`, `status`, or `merge_if_ready`; it only
-operates on already-associated work. Never supply conversation or instance IDs.
+On continuation, read the current change-request state and reassess the head,
+CI, reviews, conversations, and repository policy before acting. Do not wait
+forever in an agent turn or infer readiness from the webhook alone.
+`repo_merge_change_request` takes `action`, `changeRequestNumber`, the verified
+40-hex `headSha`, and optional `method` (`merge`, `squash`, or `rebase`; omitted
+selects the first policy-allowed strategy in that order). There is no
+`repo_watch_change_request` tool. Never supply conversation or instance IDs.
 Report confirmed receipts, not attempted merges. Pending, failed, cancelled,
 missing required checks, stale heads, draft status, unmet reviews or unresolved
 conversations, protections, and unknown eligibility block merging. Never
