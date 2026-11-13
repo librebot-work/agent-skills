@@ -46,6 +46,7 @@ The only top-level keys are:
 | `modelRoles` | Required unique roles; 1–4 entries including `default` |
 | `workspace` | Optional flat checkout slots: `key`, optional `label`, `path` |
 | `triggers` | Optional portable `kind: gitrepo` or `kind: whatsapp` semantic trigger definitions |
+| `completionJudge` | Optional task-completion judge: `instructions` and optional declared `modelRole` |
 | `actions` | Optional keyed `kind: gitrepo` or `kind: whatsapp` capability groups |
 | `connectors` | Optional remote MCP capability/resource requirements |
 | `knowledgeSources` | Optional structured external knowledge references |
@@ -86,6 +87,37 @@ connectors: []
 ```
 
 A non-empty `instructions.md` supplies the main prompt; do not introduce `behavior`, `prompt`, or `botPrompt` keys in YAML. Describe the requested behavior, boundaries, and output expectations there.
+
+### Task-completion judge
+
+This contract requires the completion-capable tools release (`0.4.7` or newer).
+Until that release is published, the platform carries a tracked unpublished
+source artifact; npm `latest` must not be claimed to accept this field.
+
+`completionJudge` is optional. Without it, tasks never automatically complete.
+It runs after task execution, with the same full tools, bound mounts, task
+history, and authorization as the runner—not the read-only trigger toolset.
+Its model defaults to `default`; `modelRole` may select any declared built-in
+or custom role with the normal binding requirements.
+
+```yaml
+completionJudge:
+  modelRole: default
+  instructions: |
+    Decide whether the whole requested task is finished, not just this run.
+    Read current repository state through native tools before deciding.
+    Keep open while the associated change request still needs CI or review;
+    complete when it is merged or closed and no requested work remains.
+```
+
+The judge submits structured `keep_open` or `complete` with a reason. Its
+completion decision is authoritative; no extra product-policy veto is added.
+Failures or invalid output leave the task open. Completion is terminal and
+purges task-owned working storage, including unpublished changes, after active
+processes stop. OMP history and audit metadata remain. Continuing completed
+work starts a linked new task with a fresh checkout and session, not a restore.
+Explain these consequences in the bot's README when opting in. Do not add
+the field merely to mirror an example or enable it on existing instances.
 
 ### Model roles
 
