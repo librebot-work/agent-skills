@@ -90,32 +90,51 @@ A non-empty `instructions.md` supplies the main prompt; do not introduce `behavi
 
 ### Task-completion judge
 
-This contract requires the completion-capable tools release (`0.4.7` or newer).
-Until that release is published, the platform carries a tracked unpublished
-source artifact; npm `latest` must not be claimed to accept this field.
+Use `completionJudge` only when platform-matched published schema/tooling
+accepts the field. Do not assume npm `latest` supports it, claim an unsupported
+release, or work around source rejection with a local artifact.
 
 `completionJudge` is optional. Without it, tasks never automatically complete.
-It runs after task execution, with the same full tools, bound mounts, task
-history, and authorization as the runner—not the read-only trigger toolset.
-Its model defaults to `default`; `modelRole` may select any declared built-in
-or custom role with the normal binding requirements.
+It runs after task execution using the same enforced read-only preparation and
+live authorization policy as start/continue deciders, with task history as
+context. Its model defaults to `default`; `modelRole` may select any declared
+built-in or custom role with the normal binding requirements. Model choice
+does not grant the runner's tools.
+
+The judge can use bound read-only repository operations, independently
+authorized WhatsApp message reads, and remote MCP tools explicitly declaring
+`annotations.readOnlyHint: true`, rechecked live before invocation. Missing or
+withdrawn annotations fail closed. Its bounded host-side workspace reader
+inspects the existing task workspace, including unpublished files, rather than
+the fresh isolated workspace used for trigger decisions. Traversal, symlinks,
+and sensitive paths remain rejected. There is no native unrestricted file
+reader, `bash`, `edit`, `write`, external write, routing, or task-search tool.
+Its only decision tool is `submit_task_completion`.
+
+Judgment is not remediation: tasks own the work. Do not ask the judge to run
+shell tests or Git commands, fix files, post comments, or route follow-up work.
+Use admitted safe readers or return `keep_open` with the exact evidence gap;
+never bypass the read-only boundary. No new source configuration overrides it.
 
 ```yaml
 completionJudge:
   modelRole: default
   instructions: |
     Decide whether the whole requested task is finished, not just this run.
-    Read current repository state through native tools before deciding.
+    Inspect current repository state through admitted read-only tools.
     Keep open while the associated change request still needs CI or review;
     complete when it is merged or closed and no requested work remains.
 ```
 
-The judge submits structured `keep_open` or `complete` with a reason. Its
-completion decision is authoritative; no extra product-policy veto is added.
-Failures or invalid output leave the task open. Completion is terminal and
-purges task-owned working storage, including unpublished changes, after active
-processes stop. OMP history and audit metadata remain. Continuing completed
-work starts a linked new task with a fresh checkout and session, not a restore.
+The judge submits structured `keep_open` or `complete` with a reason through
+`submit_task_completion`. Its completion decision is authoritative; no extra
+product-policy veto is added. Missing tools or evidence should keep the task
+open with an explanation. Preparation/submission errors, failed judgments, or
+invalid output leave it open. The runtime, not the judge, persists terminal
+completion and purges task-owned working storage, including unpublished changes,
+after active processes stop. OMP history and audit metadata remain. Continuing
+completed work starts a linked new task with a fresh checkout and session,
+not a restore.
 Explain these consequences in the bot's README when opting in. Do not add
 the field merely to mirror an example or enable it on existing instances.
 
@@ -128,8 +147,8 @@ letter or digit, then letters/digits with `-`/`_` only, max 64 chars, up to
 optional `requirements` containing boolean `tools`, `vision`, `reasoning`,
 and a positive numeric `minContextWindow`. The parser requires tool support
 for the default role because built-in tools are always available in regular
-task runs. Trigger deciders have a separate read-only environment; selecting
-the same model role does not grant the task's tools. Do not attempt to disable
+task runs. Trigger deciders and completion judges share a read-only policy;
+selecting the same model role does not grant the task's tools. Do not attempt to disable
 task built-ins with `tools: false` or use a top-level tool allowlist.
 
 Custom IDs must avoid every reserved ID: the four built-ins plus the OMP

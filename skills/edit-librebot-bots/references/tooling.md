@@ -80,6 +80,23 @@ eligible read that genuinely found no actionable work. Report only checks
 actually exercised; do not claim deployment or instance upgrades from source
 validation.
 
+Completion-judge access follows the same live read-only classification and
+authorization checks, including the MCP annotation recheck. Compare its
+requirements with the [completion contract](source-format.md#task-completion-judge):
+its bounded reader sees the existing task's unpublished files, not the fresh
+trigger checkout. There is no shell test/Git-command fallback, unrestricted
+reader, edit/write, external write, routing, or task search. The judge submits
+only `submit_task_completion`; tasks must perform remediation. Missing evidence
+requires `keep_open` with a reason, and preparation/submission failures leave
+the task open. Changing model roles cannot supply unavailable tools.
+
+Use `completionJudge` only when the platform-matched published schema/tooling
+accepts it. Do not assume npm `latest` validates the field, invent a published
+completion-capable version, or direct bot authors to bypass validation with a
+local tarball. Distinguish validation with platform-installed tooling from
+validation with the public npm release.
+
+
 
 ## Publication boundary
 

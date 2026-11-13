@@ -72,6 +72,28 @@ arbitrary decision tools by choosing another model or changing the prompt.
 If message context is required, name the independent reading consent and
 authorized chat scope; incoming-event consent alone is insufficient.
 
+### Automatic task completion
+
+When `completionJudge` is declared, explain what evidence finishes the whole
+task and which independent repository, connector, and message-read permissions
+it needs. The judge shares the enforced read-only decision policy: MCP reads
+require explicit live `readOnlyHint: true`, and authorization is rechecked.
+Unlike the fresh trigger workspace, bounded completion reads inspect existing
+task files, including unpublished changes. A model role does not grant more tools.
+
+Judgment cannot fix work, run shell tests/Git commands, write externally, or
+route tasks; it submits only `submit_task_completion`. Tasks own remediation.
+Missing safe readers or evidence keep the task open with an explanation;
+preparation/submission errors and invalid judgments also leave it open.
+Do not promise a bypass. A valid completion decision is authoritative and
+the runtime handles state and cleanup.
+
+Disclose terminal completion, eventual deletion of unpublished task files,
+retained history, and continuation as a linked fresh task rather than restored
+work. Without a judge there is no automatic completion. Use the source field
+only when platform-matched published tooling accepts it.
+
+
 
 ## Example
 
