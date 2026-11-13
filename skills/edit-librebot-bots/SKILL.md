@@ -21,12 +21,12 @@ Run these commands from the bot repository root, using the harness's shell tool:
 
 ```sh
 node --version
-TOOLS='librebot-tools@https://codeload.github.com/librebot-work/tools/tar.gz/0830820e0da5662f4b7a16e3a91774de72124368'
+TOOLS='librebot-tools@latest'
 npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
-The pinned public source release supports the current contract, including custom model roles; npm `0.4.5` does not. If npm cannot fetch the package, report the failure rather than falling back to another source or version. Node.js 24 or newer is required; respect the harness's execution and network approval policy. The source validator itself does not execute the bot or install its external skills. If the developer already supplied current failing validation output, use it as the baseline rather than rerunning just to confirm it. Distinguish pre-existing errors from errors introduced by the requested change.
+Use the current npm release, which supports custom model roles from `0.4.6` onward. If npm cannot fetch the package, report the failure rather than falling back to another source or version. Node.js 24 or newer is required; respect the harness's execution and network approval policy. The source validator itself does not execute the bot or install its external skills. If the developer already supplied current failing validation output, use it as the baseline rather than rerunning just to confirm it. Distinguish pre-existing errors from errors introduced by the requested change.
 
 ## 2. Edit the right surface
 

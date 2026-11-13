@@ -2,17 +2,17 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. All bot authoring, including scaffold, skill resolution, validation, and preview, uses the platform-matched `librebot-tools` CLI. The current source release supports custom model roles and is distributed as an exact public commit archive:
+Use Node.js 24 or newer and Git. All bot authoring, including scaffold, skill resolution, validation, and preview, uses the platform-matched `librebot-tools` CLI published on npm:
 
 ```sh
-TOOLS='librebot-tools@https://codeload.github.com/librebot-work/tools/tar.gz/0830820e0da5662f4b7a16e3a91774de72124368'
+TOOLS='librebot-tools@latest'
 npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
-This public archive contains `librebot-tools@0.4.6`. The older npm `0.4.5` release accepts the four built-in roles only; do not silently fall back to it for a custom-role source. Do not substitute a local archive, a Git checkout, or an unrelated package. Report fetch failures.
+Custom model roles require `librebot-tools@0.4.6` or newer. The older `0.4.5` release accepts the four built-in roles only. Do not substitute a local archive, a Git checkout, or an unrelated package. Report fetch failures.
 
-Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version and source commit alongside validation results when they matter for a diagnosis.
+Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
 
 | Command | Result |
 | --- | --- |

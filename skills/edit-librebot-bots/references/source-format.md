@@ -114,8 +114,8 @@ binding at run time.
 
 Keep existing role IDs stable. Do not add provider names, model IDs,
 subscriptions, or API credentials to the role object. Custom-role sources
-require tooling newer than the npm `0.4.5` line (built-ins only); see
-[tooling.md](tooling.md) for the exact archive invocation.
+require `librebot-tools@0.4.6` or newer; see [tooling.md](tooling.md) for
+the npm invocation.
 
 For a frontend specialist without repurposing OMP's standard roles:
 
