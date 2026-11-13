@@ -57,6 +57,30 @@ the linked owner's live push, maintain, or admin authority. Administration read
 is for policy visibility, not administrator bypass. Validation/preview cannot
 prove live CI, review, conversation, or branch-policy eligibility.
 
+## Diagnosing trigger-decider access
+
+`librebot preview` is a source-definition preview, not an instance's live
+trigger preview. Neither source validation nor choosing a tool-capable
+`deciderRole` proves that a decision can read current provider state.
+
+For an ignore/failure reporting an unavailable tool, compare the required read
+with the [decider tool contract](source-format.md#startcontinue-decider-tools):
+check the declared capability, the independent instance action/connector
+binding, its current connection and target, and live provider authority.
+For MCP reads, also check the connected server's explicit
+`annotations.readOnlyHint: true`; absent/false metadata excludes the tool even
+if it works in a regular task. Do not repair this by inventing source fields,
+granting shell access, or routing an ineligible task as a workaround.
+
+An explicitly authorized instance trigger preview or real delivery can
+exercise decision reads. Trigger preview uses the same read-only environment
+as live decisions, but does not commit scheduling or external writes.
+Distinguish a missing read capability, a revoked/unbound connection, and an
+eligible read that genuinely found no actionable work. Report only checks
+actually exercised; do not claim deployment or instance upgrades from source
+validation.
+
+
 ## Publication boundary
 
 Git is the transport; these tools have no login, push, deployment, bot execution, or instance-upgrade command. Use the developer's Git credentials and authorized system UI/API separately. A successful local validation, push, or tag creation does not prove that the platform accepted the revision or upgraded an instance.

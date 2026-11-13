@@ -54,6 +54,25 @@ GitLab pipeline and merge-request triggers support follow-up, but native GitLab
 merging is unsupported. Explain CI/review/conversation/policy blockers and that
 no protection bypass, self-approval, shell `gh`, or workspace credentials are needed.
 
+### Automatic eligibility checks
+
+For bots that inspect current state before starting or continuing a task,
+explain that event delivery and read access are separate setup requirements.
+The event connection does not automatically give the action connection access
+to the same repository; users must select the intended targets independently.
+If required state cannot be read or authority cannot be verified, describe
+that the decision reports the gap instead of starting work merely to explain
+the failure. Separate these decision-time reads from the external writes
+performed by an admitted task in **What the bot changes**.
+
+If automatic decisions need an MCP tool, say that the connected server must
+declare that tool read-only. A tool working during a normal task does not
+prove it is available for automatic decisions. Do not imply users can enable
+arbitrary decision tools by choosing another model or changing the prompt.
+If message context is required, name the independent reading consent and
+authorized chat scope; incoming-event consent alone is insufficient.
+
+
 ## Example
 
 ```markdown
@@ -99,5 +118,6 @@ labels issues itself.
 - Every `actions`, `triggers`, `connectors`, and `workspace` entry in the preview is reflected in **What you need** and, if it writes, in **What the bot changes**.
 - Nothing in the README claims a capability, event, or service the preview does not declare.
 - Model roles beyond `default` are explained.
+- Triggered bots distinguish decision-time read requirements from task writes, explain unreadable/unverifiable eligibility, and disclose required MCP read-only declarations and independent message-context consent.
 - No author-only content, instance-specific values, or secrets.
 - Update the README in the same change whenever capabilities, triggers, connectors, or workspace slots change.

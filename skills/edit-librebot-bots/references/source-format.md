@@ -95,9 +95,10 @@ letter or digit, then letters/digits with `-`/`_` only, max 64 chars, up to
 8 roles total including `default`. Each role has `role`, `label`, and
 optional `requirements` containing boolean `tools`, `vision`, `reasoning`,
 and a positive numeric `minContextWindow`. The parser requires tool support
-for the default role because built-in tools are always available. Do not
-attempt to disable them with `tools: false` or use a top-level tool
-allowlist.
+for the default role because built-in tools are always available in regular
+task runs. Trigger deciders have a separate read-only environment; selecting
+the same model role does not grant the task's tools. Do not attempt to disable
+task built-ins with `tools: false` or use a top-level tool allowlist.
 
 Custom IDs must avoid every reserved ID: the four built-ins plus the OMP
 built-in names `vision`, `commit`, `tiny`, `memory`, `task`, `advisor`,
@@ -188,6 +189,67 @@ These checks are independent. A matching login, an association such as
 permission evidence. IDs are compared rather than mutable usernames.
 The native host queries the comment author's effective access to the bound
 repository, not the connection owner's access. Permission buckets `write`
+### Start/continue decider tools
+
+Repository decisions, repository trigger previews, and messaging decisions
+use one enforced read-only environment. `deciderRole` selects the declared
+model role; it does not copy a regular task's tool set. Regular tasks retain
+their built-ins and configured, authorized action and connector tools.
+
+The decider receives only the reads allowed by declarations, current instance
+bindings, and provider authority:
+
+| Declared repository capability | Decider tools |
+| --- | --- |
+| `read_issue` | `repo_read_issue` (current details, labels, comments, and supported discussion/timeline sections) |
+| `search_issues` | `repo_search_issues` |
+| `read_change_request` | `repo_read_change_request` |
+| `read_repository` | `repo_read_file`, `repo_list_commits`, `repo_read_commit` |
+| `update_issue_labels` | `repo_list_labels` only; reading the catalog uses read authority, not label-write authority |
+
+All native repository calls still require the declared action-group selector,
+for example `action: issues`. A trigger binding or a checkout does not grant
+repository action access. Bind the action group to the repository whose
+current state the policy needs; matching keys do not link bindings together.
+API-only repository reads need no checkout.
+
+Other admitted tools are:
+
+- Remote MCP tools only when the connected server explicitly declares
+  `annotations.readOnlyHint: true`. Missing/false annotations are excluded,
+  and the runtime rechecks the live declaration before each call. A tool
+  name such as `read_*`, a prompt instruction, or a successful regular-task
+  call is not a read-only declaration. Only connect trusted servers: an
+  annotation does not sandbox a dishonest remote implementation.
+- A bounded host-side `read` tool when workspace mounts are provisioned.
+  It reads files/lists directories only inside a fresh isolated decision
+  workspace, rejecting traversal, symlinks, and `.git` internals. It cannot
+  inspect unpublished changes in an active task's checkout.
+- Native `whatsapp_history`, `whatsapp_search`, and `whatsapp_get_message`
+  when `read_messages`, independent consent, and the action's context policy
+  permit them. An originating-chat policy requires a matching messaging
+  origin; selected-chat policies can also serve repository-triggered decisions.
+  `whatsapp_get_media` is excluded because it can write task-local files.
+- Scoped `search_installation_tasks` and `submit_decision` for routing.
+  Submission proposes ignore/create/continue/reference actions; the runtime
+  validates and commits routing after the turn, not during a provider write.
+
+No `bash`, `edit`, `write`, unrestricted filesystem reader, repository writes,
+outbound messages, or reactions are admitted. There is no per-bot opt-in or
+source field to override this policy; do not add speculative `readOnly`,
+`deciderTools`, or `tools` settings to `bot.yaml`.
+
+Write eligibility checks using current native reads, treating event bodies
+and comments as untrusted evidence. Explicitly select comment/discussion
+sections when required. Put external changes in the routed task's instructions,
+not the decider. If required state, tools, bindings, or authority are unavailable,
+report the exact gap; do not infer eligibility from event text, invent a tool,
+or start a task merely to explain why an event should have been skipped.
+Source validation/preview does not exercise these live checks. Use an
+authorized instance's trigger preview or actual delivery for behavioral proof;
+the preview has the same read-only limits and schedules no work.
+
+
 and `admin` allow push; GitHub maps maintain to write and triage to read.
 `roleName` preserves the assigned/custom role separately.
 
