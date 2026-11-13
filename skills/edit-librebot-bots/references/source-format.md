@@ -117,6 +117,35 @@ subscriptions, or API credentials to the role object. Custom-role sources
 require tooling newer than the npm `0.4.5` line (built-ins only); see
 [tooling.md](tooling.md) for the exact archive invocation.
 
+For a frontend specialist without repurposing OMP's standard roles:
+
+```yaml
+modelRoles:
+  - role: default
+    label: Main
+    requirements:
+      tools: true
+  - role: frontend_dev_model
+    label: Frontend developer
+    requirements:
+      tools: true
+```
+
+In `instructions.md`, describe when to delegate, for example:
+
+> Keep orchestration and general implementation on the default model. For UI
+> components, styling, layout, accessibility, or frontend interactions, delegate
+> that implementation using the runtime-advertised exact model selector for
+> `frontend_dev_model`. Keep backend work on the default model.
+
+OMP advertises the configured role's approved model to the running agent.
+Model-facing task calls require the exact advertised `provider/model[:level]`
+selector; do not pass `frontend_dev_model` or `@frontend_dev_model` as the
+task's `model` argument. Never hard-code an installation's provider/model into
+the shared bot prompt. A role declaration makes a model available; instructions
+drive delegation and do not automatically replace the main agent's model.
+
+
 ### Workspace, triggers, and capabilities
 
 - Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
