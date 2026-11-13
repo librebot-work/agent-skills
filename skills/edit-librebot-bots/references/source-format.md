@@ -1,6 +1,6 @@
 # Bot source format v1
 
-Use the Librebot parser and semantic validator from `librebot-tools@latest` as the source of truth. Read the existing definition before applying these examples. Do not rewrite the whole bot to match a minimal example.
+Use the Librebot parser and semantic validator from the platform-matched tools release in [tooling.md](tooling.md) as the source of truth. Read the existing definition before applying these examples. Do not rewrite the whole bot to match a minimal example.
 
 ## Repository layout
 
@@ -89,9 +89,33 @@ A non-empty `instructions.md` supplies the main prompt; do not introduce `behavi
 
 ### Model roles
 
-Role IDs: `default`, `smol`, `slow`, `plan`. Each has `role`, `label`, and optional `requirements` containing boolean `tools`, `vision`, `reasoning`, and a positive numeric `minContextWindow`. The parser requires tool support for the default role because built-in tools are always available. Do not attempt to disable them with `tools: false` or use a top-level tool allowlist.
+Built-in role IDs are `default` (required), `smol`, `slow`, and `plan`. Bots
+may also declare safe custom IDs such as `frontend_dev_model`: start with a
+letter or digit, then letters/digits with `-`/`_` only, max 64 chars, up to
+8 roles total including `default`. Each role has `role`, `label`, and
+optional `requirements` containing boolean `tools`, `vision`, `reasoning`,
+and a positive numeric `minContextWindow`. The parser requires tool support
+for the default role because built-in tools are always available. Do not
+attempt to disable them with `tools: false` or use a top-level tool
+allowlist.
 
-Keep existing role IDs stable. A trigger's `deciderRole`, if specified, must match a declared role. Do not add provider names, model IDs, subscriptions, or API credentials to the role object.
+Custom IDs must avoid every reserved ID: the four built-ins plus the OMP
+built-in names `vision`, `commit`, `tiny`, `memory`, `task`, `advisor`,
+`widget`, `image`, `web`, `speech`, `dictation`, `judge` and the unsafe
+object keys `__proto__`, `constructor`, `prototype`. Dots are not allowed in
+role IDs.
+
+Binding rules are explicit and per instance: workspace model defaults cover
+the built-ins only and never fall back onto a custom role. Every custom role
+needs its own model binding in instance Settings → Overview → AI models, or runs using it
+fail binding validation. A trigger's `deciderRole`, when specified, may name
+any declared role (built-in or custom) but still requires that role's
+binding at run time.
+
+Keep existing role IDs stable. Do not add provider names, model IDs,
+subscriptions, or API credentials to the role object. Custom-role sources
+require tooling newer than the npm `0.4.5` line (built-ins only); see
+[tooling.md](tooling.md) for the exact archive invocation.
 
 ### Workspace, triggers, and capabilities
 
@@ -285,7 +309,7 @@ This is an example dependency, not a default requirement. Only add a dependency 
 
 ## Important limits
 
-The tool checks additional constraints and cross-file references. In this version: model roles 1–4 including `default`; workspace mounts at most 10; triggers 20; connectors 50; knowledge entries 100; skills 100. A knowledge file may be at most 10 MiB; text inlining is limited to 100,000 bytes; each skill entrypoint is non-empty and at most 50,000 bytes; each skill supporting file is at most 1 MiB. The parsed draft also has a total size limit. Do not work around limits by splitting declarations or omitting intended files from validation.
+The tool checks additional constraints and cross-file references. In this version: model roles 1–8 including `default` (built-ins `default`, `smol`, `slow`, `plan` plus safe custom IDs; reserved OMP and object-key names rejected); workspace mounts at most 10; triggers 20; connectors 50; knowledge entries 100; skills 100. A knowledge file may be at most 10 MiB; text inlining is limited to 100,000 bytes; each skill entrypoint is non-empty and at most 50,000 bytes; each skill supporting file is at most 1 MiB. The parsed draft also has a total size limit. Do not work around limits by splitting declarations or omitting intended files from validation.
 
 ## WhatsApp action declarations
 

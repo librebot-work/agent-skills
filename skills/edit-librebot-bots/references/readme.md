@@ -31,7 +31,7 @@ Derive requirements from `librebot preview . --json`, not from memory. Each decl
 
 | Declaration | What the user must provide |
 | --- | --- |
-| `modelRoles` | An AI credential in **AI access**, and model choices in instance **Settings → Models**. Explain any role beyond `default` (for example, `slow` for deep reviews, `smol` for quick classification) so users can pick an appropriate model. |
+| `modelRoles` | An AI credential in **AI access**, and model choices in instance **Settings → Overview → AI models**. Explain each role beyond `default`, including any custom role's purpose. Custom roles require explicit instance selections and cannot inherit workspace defaults; built-in roles can inherit their same-role workspace defaults. |
 | `workspace` slots | A repository for each slot in **Settings → Working directory**, through a GitHub App connection. Say what each slot is for, using its `label`. |
 | `actions` with `kind: gitrepo` | A repository connection: the **GitHub App** installed with access to the repository, or a **GitLab personal access token** in **Connections**. Translate each capability into plain language (`comment_issue` → "posts comments on issues"; `push_branch` → "pushes branches to your repository"). Users grant these in **Settings → Actions**. |
 | `actions` with `kind: whatsapp` | A WhatsApp connection (**Connections → Connect WhatsApp**) with the matching per-phone permissions. Reading message context and automated sending are separate, explicit owner choices that are off by default; say which ones the bot needs and what breaks without them. |
