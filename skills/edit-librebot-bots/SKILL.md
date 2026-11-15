@@ -26,7 +26,7 @@ npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
-Node.js 24 or newer is required. Custom model roles need tools `0.4.6` or newer; Google action kinds need the platform-matched `0.4.8` contract. While `0.4.8` is unpublished, use the exact platform-provided archive as `TOOLS` instead of claiming npm `latest` supports Google actions. Without that artifact or a matching published release, report the tooling gap. Respect network approval policy. Validation does not execute bots or install external skills. Use developer-supplied failing output as the baseline rather than rerunning to confirm it.
+Node.js 24 or newer is required. Custom model roles need tools `0.4.6` or newer; Google action kinds, `completionJudge`, and `comment_change_request` need `0.4.9` or newer. If the available release is older than a contract the source uses, report the tooling gap. Respect network approval policy. Validation does not execute bots or install external skills. Use developer-supplied failing output as the baseline rather than rerunning to confirm it.
 
 ## 2. Edit the right surface
 

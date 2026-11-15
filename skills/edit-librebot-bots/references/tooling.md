@@ -10,7 +10,7 @@ npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
-Custom model roles require `0.4.6` or newer. Native Google action kinds require `0.4.8`; until published, use the exact platform-provided `librebot-tools-0.4.8.tgz` path as `TOOLS`. Do not assume npm `latest` contains unpublished contracts, substitute an arbitrary Git checkout, or invent an archive path. If no matching release or artifact is available, report the tooling gap.
+Custom model roles require `0.4.6` or newer. Native Google action kinds, `completionJudge`, and `comment_change_request` require `0.4.9` or newer. Do not substitute an arbitrary Git checkout or invent an archive path. If no matching release is available, report the tooling gap.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
 
@@ -49,13 +49,16 @@ selector for a declared action group, not a workspace or freeform repository.
 The common change-request sections are `details`, `files`, `feedback`, `commits`,
 `comments`, `discussions`, `approvals`, and `checks`. Feedback preserves the
 provider model: GitHub `review_submissions`, GitLab `approval_state`.
+`details` adds a provider-neutral `readiness` summary for merge policy.
 GitHub derived approval state does not resolve branch-rule requirements.
 GitHub `read_change_request` requires Checks read, Issues read, and Pull requests
 read; declaration validation does not prove the installation grants them.
 Native GitHub merging additionally requires Contents write, Pull requests write,
 Checks read, Issues read, and Administration read on the App installation plus
 the linked owner's live push, maintain, or admin authority. Administration read
-is for policy visibility, not administrator bypass. Validation/preview cannot
+is for policy visibility, not administrator bypass. Native GitLab merging needs
+a token with `api` scope and Developer access, or Maintainer where branch
+protection allows only Maintainers to merge. Validation/preview cannot
 prove live CI, review, conversation, or branch-policy eligibility.
 
 ## Diagnosing trigger-decider access

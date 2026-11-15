@@ -90,9 +90,8 @@ A non-empty `instructions.md` supplies the main prompt; do not introduce `behavi
 
 ### Task-completion judge
 
-Use `completionJudge` only when platform-matched published schema/tooling
-accepts the field. Do not assume npm `latest` supports it, claim an unsupported
-release, or work around source rejection with a local artifact.
+`completionJudge` requires `librebot-tools@0.4.9` or newer. Do not work around
+source rejection by an older release with a local artifact.
 
 `completionJudge` is optional. Without it, tasks never automatically complete.
 It runs after task execution using the same enforced read-only preparation and
@@ -203,7 +202,7 @@ drive delegation and do not automatically replace the main agent's model.
 - Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
 - Repository triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. WhatsApp triggers use `kind: whatsapp` and their own events as documented below. There is no repository pin or source wrapper.
 - Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, `update_issue_title`, `publish_attachments`, `merge_change_request`, and `comment_change_request`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
-- `publish_attachments` is GitHub-only (GitLab bindings are rejected). Its `repo_publish_attachments` tool publishes up to 10 task-local `.svg`/`.png` files (10 MiB each) to the dedicated `design-artifacts` branch using the bound GitHub App connection, then posts one issue comment whose `body` uses immutable commit-addressed links via `{{url:<id>}}` placeholders. Unreferenced PNGs are embedded and SVG originals are linked. The App needs Contents and Issues write access and the linked owner's live repository write authority; no personal upload token or writable product checkout is required. Optional `transition: {add, remove}` changes labels only after the comment is confirmed and requires `update_issue_labels` in the same group. Retries with the same inputs reuse committed artifacts and the posted comment. The native publisher alone manages the artifact branch; bot instructions must permit this bounded publication but prohibit manual artifact pushes, product-branch changes, merging the artifact branch, and branch-protection bypasses. Artifact links inherit repository access; private inline preview rendering depends on GitHub. Keep credentials out of bot source.
+- `publish_attachments` works on GitHub and GitLab. Its `repo_publish_attachments` tool publishes up to 10 task-local `.svg`/`.png` files (10 MiB each) to the dedicated `design-artifacts` branch using the bound connection (GitHub App installation, or the GitLab token with `api` scope and Developer access; GitLab creates the branch from the default branch because it cannot create orphan branches), then posts one issue comment whose `body` uses immutable commit-addressed links via `{{url:<id>}}` placeholders. Unreferenced PNGs are embedded and SVG originals are linked. On GitHub the App needs Contents and Issues write access and the linked owner's live repository write authority; no personal upload token or writable product checkout is required. Optional `transition: {add, remove}` changes labels only after the comment is confirmed and requires `update_issue_labels` in the same group. Retries with the same inputs reuse committed artifacts and the posted comment. The native publisher alone manages the artifact branch; bot instructions must permit this bounded publication but prohibit manual artifact pushes, product-branch changes, merging the artifact branch, and branch-protection bypasses. Artifact links inherit repository access; private inline preview rendering depends on GitHub. Keep credentials out of bot source.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
 
 Keys use letters/digits followed by letters/digits, `.`, `_`, or `-`, up to 64 characters, and must be unique within each section. Preserve these keys when editing labels or paths. Connector identity remains label-based.
@@ -214,8 +213,7 @@ An optional checkout is selected only in the installation's action binding.
 
 ### Native Google Workspace actions
 
-Google actions require the platform-matched `librebot-tools` 0.4.8 contract,
-currently distributed as a platform archive until the registry release exists.
+Google actions require `librebot-tools@0.4.9` or newer.
 Declarations contain capabilities, never account IDs, tokens, calendar IDs, or
 installation policies. No checkout or MCP connector is required:
 
@@ -324,7 +322,7 @@ authorized instance's trigger preview or actual delivery for behavioral proof;
 the preview has the same read-only limits and schedules no work.
 
 
-### Native GitHub comment authority
+### Native comment and label authority
 
 Declare `read_issue` for issue conversation comments and
 `read_change_request` for pull-request feedback. Select `comments`,
@@ -337,8 +335,15 @@ optional `authorAssociation`, and `repositoryAuthority`:
 `permission`, `roleName`, `canPush`, `checkedAt`, and `status`
 (`verified` or `unknown`). For PRs, `isIssueAuthor` compares to the PR creator.
 Common tools return structured JSON, keeping bodies separate from available
-author context. These enriched authority fields are currently GitHub evidence;
-never infer equivalent verified authority from a GitLab username or membership claim.
+author context. The same fields are on issue creators and on label events from
+`repo_read_issue` with `section: "timeline"`, for both providers and in
+read-only deciders. On GitLab, authority is the author's effective project
+membership (inherited groups included), resolved by numeric user ID:
+`roleName` is the access level (Guest, Planner, Reporter, Developer,
+Maintainer, Owner) and `canPush` is true at Developer or above. On GitLab
+`canPush` means "can push to the repository", not "can push to protected
+branches". Never infer verified authority from a username or a membership
+claim in text; only `status: "verified"` counts.
 
 When writing a bot's decision policy:
 
@@ -487,6 +492,13 @@ use `approval_state`. Do not describe discussions as review submissions or
 GitLab approval state as equivalent to GitHub review history. GitHub approvals
 derive observed reviewer state but leave required/remaining approval counts and
 requirements satisfaction unknown; branch rules are not resolved.
+The `details` section also returns a provider-neutral `readiness` object
+(`model: merge_readiness`): `draft`, `conflicts`, `checks.state`
+(`passed`/`failed`/`pending`/`none`/`unknown`) and `checks.requiredForMerge`,
+`approvals.required`/`remaining`/`satisfied`, `discussions.unresolvedBlocking`,
+`mergeable`, and `providerStatus`. GitLab supplies approval counts directly;
+GitHub leaves facts it cannot resolve `null`. `null` never means satisfied.
+Use `readiness` for portable policy; keep provider sections for detail.
 GitHub `read_change_request` requires Checks read, Issues read, and Pull requests
 read. API-only issue reads and proposals do not implicitly require Contents read.
 
@@ -497,8 +509,14 @@ or removing a capability does not automatically upgrade running instances.
 
 ### Event-driven change-request follow-up and merging
 
-`merge_change_request` is GitHub-only; GitLab bindings reject it. Add it to
-the Developer action group only when automatic merging is intended.
+`merge_change_request` works on GitHub and GitLab with the same arguments. Add
+it to the Developer action group only when automatic merging is intended. On
+GitLab, `changeRequestNumber` is the merge request IID, `headSha` is the merge
+`sha` guard, and `method` is `merge` or `squash` (fast-forward and rebase follow
+project settings). GitLab merges only when `detailed_merge_status` is
+`mergeable`; otherwise the tool refuses with that status (draft, pipeline not
+succeeded, approvals missing, unresolved discussions, conflicts). It never
+schedules auto-merge or bypasses rules.
 Successful `repo_propose_change` calls return a durable task association in
 `result.association`: `{ associationId, changeRequestNumber, headSha, repository }`.
 Check this receipt; `associationError` means the proposal exists but its task
@@ -514,8 +532,7 @@ trusted association, including after task completion. They use the same normal
 webhook delivery, deduplication, authorization, decider, and dispatch guarantees
 as other repository triggers; there is no separate monitor, polling,
 reconciliation loop, or guaranteed eventual wake-up without a matching delivery.
-GitLab pipeline and merge-request events support this trigger workflow, but
-native GitLab merging remains unsupported.
+GitLab pipeline and merge-request events support this trigger workflow.
 
 On continuation, read the current change-request state and reassess the head,
 CI, reviews, conversations, and repository policy before acting. Do not wait
