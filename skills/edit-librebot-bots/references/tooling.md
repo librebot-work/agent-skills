@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Use Node.js 24 or newer and Git. All bot authoring, including scaffold, skill resolution, validation, and preview, uses the platform-matched `librebot-tools` CLI published on npm:
+Use Node.js 24 or newer and Git. Bot authoring uses the platform-matched `librebot-tools` CLI, from the matching npm release or an explicitly supplied platform artifact:
 
 ```sh
 TOOLS='librebot-tools@latest'
@@ -10,7 +10,7 @@ npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
-Custom model roles require `librebot-tools@0.4.6` or newer. The older `0.4.5` release accepts the four built-in roles only. Do not substitute a local archive, a Git checkout, or an unrelated package. Report fetch failures.
+Custom model roles require `0.4.6` or newer. Native Google action kinds require `0.4.8`; until published, use the exact platform-provided `librebot-tools-0.4.8.tgz` path as `TOOLS`. Do not assume npm `latest` contains unpublished contracts, substitute an arbitrary Git checkout, or invent an archive path. If no matching release or artifact is available, report the tooling gap.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
 
@@ -39,9 +39,10 @@ An editor schema is useful for completion, but is not a substitute for `validate
 The matching source format uses independent keyed `workspace`, `actions`, and
 `triggers` sections. Workspace is flat; root `resources`, provider-specific action
 arrays, nested checkout declarations, and obsolete `kind: messaging` are rejected.
-Actions and triggers support `kind: gitrepo` and `kind: whatsapp`, with separate
-capability and event namespaces. Owner bindings and consent grant independent
-runtime authority; portable declarations do not.
+Actions support `gitrepo`, `whatsapp`, `google_docs`, `google_sheets`, and
+`google_calendar`, each with its own capability namespace. Triggers remain
+`gitrepo` or `whatsapp`. Owner bindings and consent grant independent runtime
+authority; portable declarations do not.
 See [source-format.md](source-format.md) for the accepted declarations.
 Runtime native repository calls use `repo_*` names and a required `action`
 selector for a declared action group, not a workspace or freeform repository.

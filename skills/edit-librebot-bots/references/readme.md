@@ -35,12 +35,29 @@ Derive requirements from `librebot preview . --json`, not from memory. Each decl
 | `workspace` slots | A repository for each slot in **Settings → Working directory**, through a GitHub App connection. Say what each slot is for, using its `label`. |
 | `actions` with `kind: gitrepo` | A repository connection: the **GitHub App** installed with access to the repository, or a **GitLab personal access token** in **Connections**. Translate each capability into plain language (`comment_issue` → "posts comments on issues"; `push_branch` → "pushes branches to your repository"). Users grant these in **Settings → Actions**. |
 | `actions` with `kind: whatsapp` | A WhatsApp connection (**Connections → Connect WhatsApp**) with the matching per-phone permissions. Reading message context and automated sending are separate, explicit owner choices that are off by default; say which ones the bot needs and what breaks without them. |
-| `triggers` with `kind: gitrepo` | GitHub: the GitHub App connection delivers events. GitLab: a project webhook, which needs a PAT with `api` scope and Maintainer or Owner access to install automatically, or a maintainer to register it manually. Name each trigger's events and what it does. Triggers can be switched off in **Settings → Triggers**. |
+| `triggers` with `kind: gitrepo` | GitHub: the GitHub App connection delivers events, subscribed to the App events below. GitLab: a project webhook, which needs a PAT with `api` scope and Maintainer or Owner access to install automatically (all triggers below enabled), or a maintainer to register it manually with the triggers below. Name each trigger's events and what it does. Triggers can be switched off in **Settings → Triggers**. |
 | `triggers` with `kind: whatsapp` | A WhatsApp connection with incoming events approved. WhatsApp triggers start switched off; tell users to enable them and which events matter. |
 | `connectors` (remote MCP) | An MCP connection in **Connections** with the service's endpoint and authentication, selected in **Settings → Actions**. Name the service, link its documentation, and say which tools the bot uses. |
 | `knowledgeSources`, `knowledge/`, `skills/` | Nothing to set up; they ship with the bot. Mention only what users benefit from knowing (for example, "answers from the 2026 handbook"). |
 
 Mark a connection optional only if the bot still does useful work without it, and say what is lost. Never ask users to put tokens or secrets anywhere other than Librebot's connection settings.
+
+For each declared repository event, tell users exactly which provider events
+must be switched on. Take them from `librebot preview . --json`
+(`triggerProviderEvents`) or this table:
+
+| Event | GitHub App event subscription | GitLab webhook trigger |
+| --- | --- | --- |
+| `issue.opened`, `issue.updated`, `issue.closed`, `issue.reopened` | Issues | Issues events |
+| `issue.comment.created`, `issue.comment.updated` | Issue comment | Comments |
+| `change_request.opened`, `change_request.updated`, `change_request.closed`, `change_request.reopened`, `change_request.merged`, `change_request.commits_updated` | Pull request | Merge request events |
+| `change_request.comment.created`, `change_request.comment.updated` | Issue comment and Pull request review comment | Comments |
+| `change_request.approval_changed` | Pull request review | Merge request events |
+| `change_request.checks_updated` | Check run, Check suite, Workflow run, and Status | Pipeline events |
+| `repository.pushed` | Push | Push events |
+
+For `comment_change_request`, say the bot "replies in pull/merge request
+review threads"; it needs GitHub Pull requests write or GitLab Developer access.
 
 For `merge_change_request`, require a GitHub App connection (GitLab is not
 supported) and explain its Contents/Pull requests write and Checks/Issues/

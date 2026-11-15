@@ -202,7 +202,7 @@ drive delegation and do not automatically replace the main agent's model.
 
 - Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
 - Repository triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. WhatsApp triggers use `kind: whatsapp` and their own events as documented below. There is no repository pin or source wrapper.
-- Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, `update_issue_title`, `publish_attachments`, and `merge_change_request`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
+- Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, `update_issue_title`, `publish_attachments`, `merge_change_request`, and `comment_change_request`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
 - `publish_attachments` is GitHub-only (GitLab bindings are rejected). Its `repo_publish_attachments` tool publishes up to 10 task-local `.svg`/`.png` files (10 MiB each) to the dedicated `design-artifacts` branch using the bound GitHub App connection, then posts one issue comment whose `body` uses immutable commit-addressed links via `{{url:<id>}}` placeholders. Unreferenced PNGs are embedded and SVG originals are linked. The App needs Contents and Issues write access and the linked owner's live repository write authority; no personal upload token or writable product checkout is required. Optional `transition: {add, remove}` changes labels only after the comment is confirmed and requires `update_issue_labels` in the same group. Retries with the same inputs reuse committed artifacts and the posted comment. The native publisher alone manages the artifact branch; bot instructions must permit this bounded publication but prohibit manual artifact pushes, product-branch changes, merging the artifact branch, and branch-protection bypasses. Artifact links inherit repository access; private inline preview rendering depends on GitHub. Keep credentials out of bot source.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
 
@@ -212,34 +212,57 @@ may use the same key without becoming linked. There is no root `resources`
 array, `workspace.checkouts` wrapper, or checkout field in an action declaration.
 An optional checkout is selected only in the installation's action binding.
 
-### Native GitHub comment authority
+### Native Google Workspace actions
 
-Declare `read_issue` for issue conversation comments and
-`read_change_request` for pull-request feedback. Select `comments`,
-`discussions`, or `feedback` explicitly; inline review discussions are separate.
+Google actions require the platform-matched `librebot-tools` 0.4.8 contract,
+currently distributed as a platform archive until the registry release exists.
+Declarations contain capabilities, never account IDs, tokens, calendar IDs, or
+installation policies. No checkout or MCP connector is required:
 
-Native results preserve author logins and add stable numeric `authorId`.
-The issue/PR creator also has `authorId`. Each comment/review includes
-`isIssueAuthor` (`true`, `false`, or `null` when identity is missing),
-optional `authorAssociation`, and `repositoryAuthority`:
-`permission`, `roleName`, `canPush`, `checkedAt`, and `status`
-(`verified` or `unknown`). For PRs, `isIssueAuthor` compares to the PR creator.
-Common tools return structured JSON, keeping bodies separate from available
-author context. These enriched authority fields are currently GitHub evidence;
-never infer equivalent verified authority from a GitLab username or membership claim.
+```yaml
+actions:
+  - key: documents
+    kind: google_docs
+    capabilities: [search_documents, read_document, create_document, edit_document]
+  - key: budget
+    kind: google_sheets
+    capabilities: [read_spreadsheet, write_values]
+  - key: schedule
+    kind: google_calendar
+    capabilities: [search_events, read_event, create_event, edit_event]
+```
 
-When writing a bot's decision policy:
+Docs capabilities are `search_documents`, `read_document`, `create_document`,
+and `edit_document`. Sheets capabilities are `search_spreadsheets`,
+`read_spreadsheet`, `create_spreadsheet`, `write_values`, `append_values`, and
+`write_formulas`. Calendar capabilities are `search_events`, `read_event`,
+`create_event`, `edit_event`, `cancel_event`, and `manage_attendees`.
 
-| Decision | Required evidence |
-| --- | --- |
-| Accept requirements or request revisions | `isIssueAuthor === true` |
-| Mark ready for development | `repositoryAuthority.status === "verified"` and `repositoryAuthority.canPush === true` |
+One Google account can serve all three groups. The installer binds each
+independently. Drive discovery covers existing Docs/Sheets available to the
+linked account, not just selected files. Calendar bindings select exact
+calendar IDs and explicit attendee/notification policies. Grant
+`manage_attendees` in addition to create/edit when invitations or attendee
+changes are required. Literal Sheets writes do not interpret formulas;
+`write_formulas` is separate authority.
 
-These checks are independent. A matching login, an association such as
-`MEMBER`/`COLLABORATOR`/`CONTRIBUTOR`, or a claim in comment text is not
-permission evidence. IDs are compared rather than mutable usernames.
-The native host queries the comment author's effective access to the bound
-repository, not the connection owner's access. Permission buckets `write`
+Use the advertised `google_*` tools with the declared `action` selector.
+Docs edits require the revision returned by a read; Calendar changes require
+the event ETag. Recurring occurrence versus series changes require explicit
+scope; never change a whole series to work around an occurrence edit.
+Sheets writes are unconditional, not atomic compare-and-swap.
+
+Reuse the same stable `intentId` for the same write across retries and task
+continuations. Poll `google_get_operation` after an uncertain outcome; never
+resubmit with a new intent merely because a response was lost. Creating an
+event is not proof that invitations were delivered. Google content and derived
+outputs can reach model providers and persist in task history after disconnect.
+Document these effects and required Google permissions in the bot README.
+
+Read-only deciders and completion judges may receive declared search/read
+tools only. They cannot create write intents or mutate Google resources.
+
+
 ### Start/continue decider tools
 
 Repository decisions, repository trigger previews, and messaging decisions
@@ -301,6 +324,34 @@ authorized instance's trigger preview or actual delivery for behavioral proof;
 the preview has the same read-only limits and schedules no work.
 
 
+### Native GitHub comment authority
+
+Declare `read_issue` for issue conversation comments and
+`read_change_request` for pull-request feedback. Select `comments`,
+`discussions`, or `feedback` explicitly; inline review discussions are separate.
+
+Native results preserve author logins and add stable numeric `authorId`.
+The issue/PR creator also has `authorId`. Each comment/review includes
+`isIssueAuthor` (`true`, `false`, or `null` when identity is missing),
+optional `authorAssociation`, and `repositoryAuthority`:
+`permission`, `roleName`, `canPush`, `checkedAt`, and `status`
+(`verified` or `unknown`). For PRs, `isIssueAuthor` compares to the PR creator.
+Common tools return structured JSON, keeping bodies separate from available
+author context. These enriched authority fields are currently GitHub evidence;
+never infer equivalent verified authority from a GitLab username or membership claim.
+
+When writing a bot's decision policy:
+
+| Decision | Required evidence |
+| --- | --- |
+| Accept requirements or request revisions | `isIssueAuthor === true` |
+| Mark ready for development | `repositoryAuthority.status === "verified"` and `repositoryAuthority.canPush === true` |
+
+These checks are independent. A matching login, an association such as
+`MEMBER`/`COLLABORATOR`/`CONTRIBUTOR`, or a claim in comment text is not
+permission evidence. IDs are compared rather than mutable usernames.
+The native host queries the comment author's effective access to the bound
+repository, not the connection owner's access. Permission buckets `write`
 and `admin` allow push; GitHub maps maintain to write and triage to read.
 `roleName` preserves the assigned/custom role separately.
 
@@ -335,6 +386,89 @@ Semantic events are `issue.opened`, `issue.updated`, `issue.closed`,
 `change_request.reopened`, `change_request.merged`, `change_request.commits_updated`,
 `change_request.comment.created`, `change_request.comment.updated`,
 `change_request.approval_changed`, `change_request.checks_updated`, and `repository.pushed`.
+
+#### Provider deliveries behind each event
+
+Each row lists the provider webhook and actions that produce the event, and the
+subscription that must be enabled: the GitHub App's **Subscribe to events**
+entry, or the GitLab project webhook trigger. Webhooks that Librebot installs
+on GitLab enable all of them; a GitHub App and a manually registered GitLab
+webhook must enable the ones the bot's triggers use, or the events never
+arrive. `librebot preview` prints them per trigger. Deliveries not
+listed (deletions, GitHub review-thread resolve/unresolve, GitLab tag pushes,
+confidential or internal issues and notes) produce no event.
+
+| Event | Meaning | GitHub webhook: actions | GitLab hook: actions | Enable (GitHub App event / GitLab trigger) |
+| --- | --- | --- | --- | --- |
+| `issue.opened` | Issue created | `issues`: `opened` | Issue Hook: `open` | Issues / Issues events |
+| `issue.updated` | Issue metadata changed | `issues`: `edited`, `labeled`, `unlabeled`, `assigned`, `unassigned`, `milestoned`, `demilestoned`, `locked`, `unlocked` | Issue Hook: `update` | Issues / Issues events |
+| `issue.closed` | Issue closed | `issues`: `closed` | Issue Hook: `close` | Issues / Issues events |
+| `issue.reopened` | Issue reopened | `issues`: `reopened` | Issue Hook: `reopen` | Issues / Issues events |
+| `issue.comment.created` | Comment on an issue (never a change request) | `issue_comment`: `created` on an issue | Note Hook on an Issue: `create` | Issue comment / Comments |
+| `issue.comment.updated` | Issue comment edited | `issue_comment`: `edited` on an issue | Note Hook on an Issue: `update` | Issue comment / Comments |
+| `change_request.opened` | Change request opened | `pull_request`: `opened` | Merge Request Hook: `open` | Pull request / Merge request events |
+| `change_request.updated` | Metadata changed without new commits | `pull_request`: `edited` (title, body, base branch), `labeled`, `unlabeled`, `assigned`, `unassigned`, `milestoned`, `demilestoned`, `locked`, `unlocked`, `ready_for_review`, `converted_to_draft`, `review_requested`, `review_request_removed`, `auto_merge_enabled`, `auto_merge_disabled` | Merge Request Hook: `update` without new commits, or with new commits when a non-commit field (title, description, labels, assignees, reviewers, draft, target branch) also changed | Pull request / Merge request events |
+| `change_request.closed` | Closed without merging | `pull_request`: `closed` with `merged: false` | Merge Request Hook: `close` | Pull request / Merge request events |
+| `change_request.reopened` | Reopened | `pull_request`: `reopened` | Merge Request Hook: `reopen` | Pull request / Merge request events |
+| `change_request.merged` | Merged | `pull_request`: `closed` with `merged: true` | Merge Request Hook: `merge` | Pull request / Merge request events |
+| `change_request.commits_updated` | New commits on the source branch | `pull_request`: `synchronize` | Merge Request Hook: `update` with `oldrev` | Pull request / Merge request events |
+| `change_request.comment.created` | Top-level comment, inline review comment, or review-thread reply | `issue_comment`: `created` on a pull request; `pull_request_review_comment`: `created` (single inline comments, each inline comment of a submitted review, and thread replies) | Note Hook on a MergeRequest: `create` (overview notes, diff notes, and discussion replies) | Issue comment + Pull request review comment / Comments |
+| `change_request.comment.updated` | Change-request comment edited | `issue_comment`: `edited` on a pull request; `pull_request_review_comment`: `edited` | Note Hook on a MergeRequest: `update` | Issue comment + Pull request review comment / Comments |
+| `change_request.approval_changed` | Review or approval state changed | `pull_request_review`: `submitted` (approve, request changes, and comment-only reviews), `edited`, `dismissed` | Merge Request Hook: `approved`, `unapproved`, `approval`, `unapproval`; no request-changes equivalent | Pull request review / Merge request events |
+| `change_request.checks_updated` | A CI signal for a commit changed | `check_run`: `completed`; `check_suite`: `completed`; `workflow_run`: `completed`; `status`: every delivery | Pipeline Hook: every pipeline status change | Check run + Check suite + Workflow run + Status / Pipeline events |
+| `repository.pushed` | Commits pushed to a branch | `push`, except branch deletion | Push Hook, except branch deletion | Push / Push events |
+
+Behavior worth relying on:
+
+- A top-level pull request comment arrives from GitHub as `issue_comment`, but
+  fires only `change_request.comment.created`, never `issue.comment.created`.
+  A bot with both an issue trigger and a change-request trigger runs only the
+  change-request trigger's decider for it.
+- A submitted review body fires `change_request.approval_changed` with
+  `review:` set to `approved`, `changes_requested`, `commented`, or `dismissed`
+  and the review body as event `body`. It does not fire
+  `change_request.comment.created`; the review's inline comments do, one event
+  each. Re-requesting a review fires `change_request.updated`, not
+  `approval_changed`.
+- `change_request.checks_updated` fires per delivery, not per aggregate state:
+  one commit with three check runs, their suite, and a workflow run produces
+  several events. GitLab fires once per pipeline status change, including
+  `pending` and `running`. Read `checks` for the current aggregate.
+- Self-authored deliveries are not filtered. The bot's own comments, replies,
+  pushes, proposals, and merges fire events for its own triggers. The decider
+  sees `actor`, `actorId`, `actorKind`, and `actorIsBot`; on GitHub the bot's
+  own actions carry the App login `<app-slug>[bot]` with `actorKind: Bot`. On
+  GitLab the actor is the connection's token owner. Write the ignore rule into
+  `deciderInstructions`, for example "ignore events whose actor is this bot".
+
+Event data identifies the target for the decider: `ref` carries the issue or
+change-request number (checks events name the first associated change request
+when the provider includes one, otherwise only the head commit). Comment events
+also carry `commentId` (the provider's numeric comment or note ID) and, for
+change-request review comments, `threadId`: the GitHub root review-comment ID
+(the comment itself, or its `in_reply_to_id`) or the GitLab discussion ID.
+Top-level GitHub pull request comments have no `threadId`; GitLab merge request
+notes always have one. Pass `threadId` through the task input when the task
+should reply in that thread.
+
+#### Replying to change-request comments
+
+- Top-level change-request comment: `repo_comment_issue` with
+  `targetKind: change_request` and the change-request number as `issueNumber`
+  (capability `comment_issue`; GitHub Issues write).
+- Reply inside a review thread: `repo_comment_change_request` with
+  `changeRequestNumber`, `threadId`, and `body` (capability
+  `comment_change_request`; GitHub Pull requests write, GitLab Developer).
+  GitHub threads are addressed by the root review-comment ID; GitLab by
+  discussion ID. The receipt is `{ commentId, changeRequestNumber, threadId, url }`.
+
+`repo_read_change_request` sections hold comments as follows:
+
+| Section | GitHub | GitLab |
+| --- | --- | --- |
+| `comments` | Top-level conversation comments (`id`) | All notes, flat (`id`), including diff notes and replies |
+| `discussions` | Inline review comments, flat; `id` and `in_reply_to_id` (thread root is `in_reply_to_id ?? id`). Thread resolution state is not exposed | Threads: discussion `id` plus `notes[]`, each with `resolvable` and `resolved` |
+| `feedback` | Review submissions: `state`, `body`, author | Approval state, no comments |
 
 The platform binds workspace, actions, and triggers independently to a provider,
 connection, and target `{id, path}`. `push_branch` requires a selected declared,
