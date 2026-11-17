@@ -59,6 +59,17 @@ must be switched on. Take them from `librebot preview . --json`
 For `comment_change_request`, say the bot "replies in pull/merge request
 review threads"; it needs GitHub Pull requests write or GitLab Developer access.
 
+For `read_issue_artifacts`, say the bot "reads native issue artifacts
+(detailed reports and previews attached to the issue)"; it needs GitHub
+Issues read access. For `write_issue_artifacts`, say the bot "publishes
+detailed reports and previews as native issue artifacts, keeping comments
+short"; it needs GitHub Issues read and write access. Both are GitHub-only:
+they do not work with a GitLab connection. If the bot posts screenshots,
+explain that image publishing (`publish_attachments`) still posts its own
+short comment, which doubles as the linked comment for the artifact, and
+that the artifact is then updated to embed the images. State routine
+artifact edits that change nothing meaningful post no further comment.
+
 For `merge_change_request`, require a GitHub App connection with Contents/Pull
 requests write and Checks/Issues/Administration read permissions, or a GitLab
 token with `api` scope and Developer access (Maintainer where the target
