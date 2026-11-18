@@ -213,15 +213,17 @@ An optional checkout is selected only in the installation's action binding.
 
 ### Native Google Workspace actions
 
-Google actions require `librebot-tools@0.4.9` or newer.
-Declarations contain capabilities, never account IDs, tokens, calendar IDs, or
-installation policies. No checkout or MCP connector is required:
+Google actions require `librebot-tools@0.4.9` or newer. The Docs
+content/format split and the Sheets `format_cells` grant together require
+`0.4.12` or newer. Declarations contain capabilities, never account IDs,
+tokens, calendar IDs, or installation policies. No checkout or MCP
+connector is required:
 
 ```yaml
 actions:
   - key: documents
     kind: google_docs
-    capabilities: [search_documents, read_document, create_document, edit_document]
+    capabilities: [search_documents, read_document, create_document, edit_document_content, format_document]
   - key: budget
     kind: google_sheets
     capabilities: [read_spreadsheet, write_values]
@@ -230,19 +232,44 @@ actions:
     capabilities: [search_events, read_event, create_event, edit_event]
 ```
 
-Docs capabilities are `search_documents`, `read_document`, `create_document`,
-and `edit_document`. Sheets capabilities are `search_spreadsheets`,
-`read_spreadsheet`, `create_spreadsheet`, `write_values`, `append_values`, and
-`write_formulas`. Calendar capabilities are `search_events`, `read_event`,
-`create_event`, `edit_event`, `cancel_event`, and `manage_attendees`.
+Docs capabilities are `search_documents`, `read_document`,
+`create_document`, `edit_document_content`, and `format_document`. Sheets
+capabilities are `search_spreadsheets`, `read_spreadsheet`,
+`create_spreadsheet`, `write_values`, `append_values`, `write_formulas`,
+and `format_cells`. Calendar capabilities are `search_events`, `read_event`,
+`create_event`, `edit_event`, `cancel_event`, and `manage_attendees`. The
+broad `edit_document` grant is removed: declare `edit_document_content`,
+`format_document`, or both instead.
+
+Content and style are separate grants. `edit_document_content` authorizes
+`google_edit_document` for text insertion, replacement, and deletion only.
+`format_document` authorizes `google_format_document` for text colors and
+named heading styles only; it never grants content edits. Sheets keeps the
+same separation: literal `write_values` (RAW, never evaluates formulas) and
+`write_formulas` (USER_ENTERED) are distinct grants, and `format_cells`
+sets or clears font/fill colors only without granting value or formula
+authority. A style-only installation cannot change text or values, and a
+content-only installation cannot change styling.
+
+Reads are bounded. Search with plain-text queries over broad Drive discovery
+(existing Docs/Sheets available to the linked account, including shared
+drives); page cursors never broaden authority. `google_read_document` lists
+tab IDs and returns one bounded tab window. Continue with `nextStartChar`
+as `startChar`, the same `tabId`, and the same `revisionId` when returned.
+A document without a revision can be read but not edited. Use the returned
+structural UTF-16 ranges (not the continuation offset) for formatting.
+`google_read_spreadsheet` without ranges lists sheet IDs. Read one sheet
+with `sheetId` and `gridRange` to inspect values, formulas, styles, and merges.
+Use that sheet ID and a bounded bare A1 `range` with `google_format_cells`.
+Calendar searches require an explicit time window. Docs edits and Calendar
+changes fail on stale revisions or ETags instead of merging; read again.
 
 One Google account can serve all three groups. The installer binds each
 independently. Drive discovery covers existing Docs/Sheets available to the
 linked account, not just selected files. Calendar bindings select exact
 calendar IDs and explicit attendee/notification policies. Grant
 `manage_attendees` in addition to create/edit when invitations or attendee
-changes are required. Literal Sheets writes do not interpret formulas;
-`write_formulas` is separate authority.
+changes are required.
 
 Use the advertised `google_*` tools with the declared `action` selector.
 Docs edits require the revision returned by a read; Calendar changes require
@@ -258,7 +285,7 @@ outputs can reach model providers and persist in task history after disconnect.
 Document these effects and required Google permissions in the bot README.
 
 Read-only deciders and completion judges may receive declared search/read
-tools only. They cannot create write intents or mutate Google resources.
+tools only, under the same bounded read flow. They cannot create write intents or mutate Google resources.
 
 
 ### Start/continue decider tools

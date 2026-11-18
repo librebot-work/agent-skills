@@ -10,7 +10,7 @@ npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
-Custom model roles require `0.4.6` or newer. Native Google action kinds, `completionJudge`, and `comment_change_request` require `0.4.9` or newer. Native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) require `0.4.10` or newer. Do not substitute an arbitrary Git checkout or invent an archive path. If no matching release is available, report the tooling gap.
+Custom model roles require `0.4.6` or newer. Native Google action kinds, `completionJudge`, and `comment_change_request` require `0.4.9` or newer. The Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant require `0.4.12` or newer. Native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) require `0.4.10` or newer. Do not substitute an arbitrary Git checkout or invent an archive path. If no matching release is available, report the tooling gap.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
 
