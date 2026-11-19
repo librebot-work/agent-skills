@@ -42,6 +42,8 @@ The only top-level keys are:
 | `formatVersion` | Required; integer `1` |
 | `name` | Required display name, not the bot's URL handle |
 | `description` | Required non-empty description |
+| `upgradeSummary` | Optional release note for the next publish: one trimmed line of plain text, 1–280 Unicode code points |
+| `upgradePriority` | Optional highlight for the note: `action` or `notable`; requires `upgradeSummary` |
 | `icon` | Optional repository-relative SVG, PNG, or WebP file path |
 | `modelRoles` | Required unique roles; 1–4 entries including `default` |
 | `workspace` | Optional flat checkout slots: `key`, optional `label`, `path` |
@@ -87,6 +89,40 @@ connectors: []
 ```
 
 A non-empty `instructions.md` supplies the main prompt; do not introduce `behavior`, `prompt`, or `botPrompt` keys in YAML. Describe the requested behavior, boundaries, and output expectations there.
+
+### Upgrade notes
+
+`upgradeSummary` and `upgradePriority` require `librebot-tools@0.4.13` or
+newer. Do not work around source rejection by an older release with a local
+artifact.
+
+```yaml
+upgradeSummary: Drops SMS support; connect a call-capable phone instead.
+upgradePriority: action
+```
+
+`upgradeSummary` is the author-written release note for the next publish:
+one trimmed line of plain text describing the user-visible change from the
+preceding release. It holds 1–280 Unicode code points after trimming and
+rejects multi-line content and control or separator characters (including
+tabs). `upgradePriority` highlights the note: `action` when users must take
+a concrete step to adopt the revision, `notable` for a material change that
+needs no step. The priority requires a summary. Omit both fields for
+releases without user-visible changes, and never copy them into the root
+`README.md`: they are shown in the version upgrade dialog, not the bot page.
+Call out reversals of earlier changes explicitly.
+
+The note describes the next publish, so replace or remove the inherited note
+before tagging: a stale note misattributes old changes to the new revision.
+`sourceCommit` and `sourceTag` are server-resolved at publish time and are
+never source fields; remove them if they appear in a draft, and never invent
+values for them.
+
+The upgrade dialog shows the reviewed snapshot's own note plus the notes of
+skipped tagged releases on the same forward path, newest first and
+deduplicated by commit. Those earlier notes are historical context, even
+ones marked `action`; only the direct pinned-to-target comparison decides
+new requirements. Notes are displayed verbatim and never gate an upgrade.
 
 ### Task-completion judge
 

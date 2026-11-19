@@ -26,13 +26,14 @@ npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
-Node.js 24 or newer is required. Custom model roles need tools `0.4.6` or newer; Google action kinds, `completionJudge`, and `comment_change_request` need `0.4.9` or newer; native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) need `0.4.10` or newer; the Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant need `0.4.12` or newer. If the available release is older than a contract the source uses, report the tooling gap. Respect network approval policy. Validation does not execute bots or install external skills. Use developer-supplied failing output as the baseline rather than rerunning to confirm it.
+Node.js 24 or newer is required. Custom model roles need tools `0.4.6` or newer; Google action kinds, `completionJudge`, and `comment_change_request` need `0.4.9` or newer; native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) need `0.4.10` or newer; the Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant need `0.4.12` or newer; upgrade note fields (`upgradeSummary`, `upgradePriority`) need `0.4.13` or newer. If the available release is older than a contract the source uses, report the tooling gap. Respect network approval policy. Validation does not execute bots or install external skills. Use developer-supplied failing output as the baseline rather than rerunning to confirm it.
 
 ## 2. Edit the right surface
 
 | Requested change | Source to edit |
 | --- | --- |
 | Display name, description, model roles and requirements | `bot.yaml` |
+| Release note for the next publish: what changed since the previous release | `bot.yaml` → `upgradeSummary`, plus `upgradePriority` when it needs highlighting |
 | Bot icon | `bot.yaml` → `icon` and its referenced SVG, PNG, or WebP file |
 | User manual published on the bot page: purpose, limits, required AI access and connections, setup, examples, and external changes | Required root `README.md` |
 | Main behavior, policies, output expectations | `instructions.md` |
@@ -46,6 +47,7 @@ Node.js 24 or newer is required. Custom model roles need tools `0.4.6` or newer;
 Keep these invariants:
 
 - Preserve `formatVersion: 1` and existing declarations unless the requested change requires otherwise. Unknown `bot.yaml` keys are errors. Do not invent configuration fields or use a generic MCP configuration format.
+- Write `upgradeSummary` as one trimmed line of plain text (1–280 Unicode code points, single line, no control characters). Use `upgradePriority: action` when users must do something to adopt the revision, `notable` for a material change needing no step; the priority requires a summary, and both are omitted when the revision has no user-visible change. Replace or remove the inherited note before tagging: it describes the next publish from the previous release, and a stale note misattributes old changes. Never author `sourceCommit` or `sourceTag`: the platform resolves and records those at publish time.
 - Keep a unique `default` model role. Built-in role IDs are `default`, `smol`, `slow`, and `plan`; bots may also declare safe custom IDs such as `frontend_dev_model` (start with a letter or digit, then letters/digits with `-`/`_` only, max 64 chars, up to 8 roles total). Never use a reserved OMP name (`vision`, `commit`, `tiny`, `memory`, `task`, `advisor`, `widget`, `image`, `web`, `speech`, `dictation`, `judge`) or an unsafe object key (`__proto__`, `constructor`, `prototype`). Every custom role needs an explicit model binding in instance Settings → Overview → AI models: workspace defaults cover built-ins only, with no fallback for custom roles. A trigger `deciderRole` must be a declared role (built-in or custom). Model roles express requirements, not provider credentials or instance model bindings. Use the platform-matched tools release described in [tooling.md](references/tooling.md).
 - Built-in tools are always enabled for regular task runs, not trigger deciders or completion judges. Do not add a top-level `tools` field. `actions[].capabilities` and `connectors[].tools` are separate valid declarations; request only needed capabilities.
 - Never store credentials or instance bindings in source. Actions have stable `key`, optional `label`, non-empty `capabilities`, and kind `gitrepo`, `whatsapp`, `google_docs`, `google_sheets`, or `google_calendar`. Triggers still use only `gitrepo` or `whatsapp` with matching events. Workspace entries have stable `key`, optional `label`, and `path`. Connectors retain unique labels; portable knowledge-source IDs remain stable.
@@ -111,5 +113,7 @@ If the developer requested commit/push, stage the relevant files explicitly, com
 Local validation is not proof of server acceptance. When system access is available, inspect the bot's accepted commit and source status in Librebot; report a publication failure instead of claiming success from `git push` alone. Otherwise report the pushed SHA and that acceptance is unverified.
 
 Existing instances remain pinned until explicitly upgraded to a valid commit SHA or tag. Do not upgrade instances, move tags, change visibility, or rename the bot as part of a definition edit unless separately requested.
+
+When the developer tags the validated revision, its upgrade dialog shows the reviewed snapshot's own release note plus the notes of skipped tagged releases on the same path, newest first. Those older notes are historical context, even ones marked `action`; only the direct pinned-to-target comparison determines new requirements, and notes never gate an upgrade. Call out reversals of earlier changes explicitly in the new note.
 
 Finish with the changed files and behavior, validation/preview results and warnings, any authorized behavioral verification, and commit/push/acceptance status. State exactly what was not exercised.
