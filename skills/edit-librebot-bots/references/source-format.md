@@ -297,11 +297,25 @@ unit: "PT"}, spaceBelow: {magnitude: 6, unit: "PT"}}` and `fields:
 changes are outside this pilot: put text changes in `google_edit_document`
 under `edit_document_content`.
 
-Sheets keeps the same separation: literal `write_values` (RAW, never evaluates formulas) and
-`write_formulas` (USER_ENTERED) are distinct grants, and `format_cells`
-sets or clears font/fill colors only without granting value or formula
-authority. A style-only installation cannot change text or values, and a
-content-only installation cannot change styling.
+Sheets keeps formatting separate from literal `write_values` (RAW) and
+`write_formulas` (USER_ENTERED). Under `format_cells`, call
+`google_format_cells` with `spreadsheetId`, native `requests`, and `intentId`.
+Each request must be `repeatCell` or `updateBorders`; every `range` must use
+the same explicit `sheetId` with zero-based, half-open row and column bounds.
+For example, this formats A1:D1 on sheet ID 42:
+
+```json
+{"repeatCell":{"range":{"sheetId":42,"startRowIndex":0,"endRowIndex":1,"startColumnIndex":0,"endColumnIndex":4},"cell":{"userEnteredFormat":{"textFormat":{"bold":true,"fontSize":14},"backgroundColorStyle":{"themeColor":"ACCENT1"}}},"fields":"userEnteredFormat.textFormat.bold,userEnteredFormat.textFormat.fontSize,userEnteredFormat.backgroundColorStyle"}}
+```
+
+Use exact reviewed `userEnteredFormat` paths for font, fill, number format,
+alignment, wrapping, text direction/rotation, or padding. Reset a reviewed
+property by including its path in `fields` and omitting its value from
+`cell`. To clear a legacy or modern fill, mask both `backgroundColor` and
+`backgroundColorStyle` under `userEnteredFormat`. For borders use native
+`updateBorders` with named sides (use `style: "NONE"` to clear a side).
+No wildcard masks, value or formula writes, row deletion, or links; one
+disallowed request refuses the entire batch.
 
 Reads are bounded. Search with plain-text queries over broad Drive discovery
 (existing Docs/Sheets available to the linked account, including shared
@@ -314,7 +328,9 @@ Reads report the text and paragraph styles seen in the window, so verify a
 formatting call with a follow-up bounded read of the same tab.
 `google_read_spreadsheet` without ranges lists sheet IDs. Read one sheet
 with `sheetId` and `gridRange` to inspect values, formulas, styles, and merges.
-Use that sheet ID and a bounded bare A1 `range` with `google_format_cells`.
+Convert the target A1 range to native grid bounds for formatting; for
+example, A1:D1 uses rows `[0, 1)` and columns `[0, 4)`. Read the same range
+back to check `enteredFormat` and `effectiveFormat` independently.
 Calendar searches require an explicit time window. Docs edits and Calendar
 changes fail on stale revisions or ETags instead of merging; read again.
 
