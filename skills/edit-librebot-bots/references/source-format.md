@@ -279,9 +279,25 @@ broad `edit_document` grant is removed: declare `edit_document_content`,
 
 Content and style are separate grants. `edit_document_content` authorizes
 `google_edit_document` for text insertion, replacement, and deletion only.
-`format_document` authorizes `google_format_document` for text colors and
-named heading styles only; it never grants content edits. Sheets keeps the
-same separation: literal `write_values` (RAW, never evaluates formulas) and
+`format_document` authorizes `google_format_document`, which takes native
+Docs `requests` — only `updateTextStyle` and `updateParagraphStyle` in this
+pilot — instead of a custom operation schema. Every request names its tab
+explicitly inside `range`, and all requests in one call must target the same
+tab from the same read `revisionId`; a stale revision is refused, so read
+again. Each request carries an exact `fields` mask of reviewed leaf paths
+(for example `bold`, `fontSize`, `foregroundColor`); wildcard or unknown
+masks, unknown keys, links, and any content or structural request refuse the
+whole call before anything is written — one out-of-grant request fails the
+entire batch, never partially applies. A 24 pt bold title is one
+`updateTextStyle` with `textStyle: {bold: true, fontSize: {magnitude: 24,
+unit: "PT"}}` and `fields: "bold,fontSize"`; paragraph spacing is one
+`updateParagraphStyle` with `paragraphStyle: {spaceAbove: {magnitude: 12,
+unit: "PT"}, spaceBelow: {magnitude: 6, unit: "PT"}}` and `fields:
+"spaceAbove,spaceBelow"`. Links (`link`), content edits, and structural
+changes are outside this pilot: put text changes in `google_edit_document`
+under `edit_document_content`.
+
+Sheets keeps the same separation: literal `write_values` (RAW, never evaluates formulas) and
 `write_formulas` (USER_ENTERED) are distinct grants, and `format_cells`
 sets or clears font/fill colors only without granting value or formula
 authority. A style-only installation cannot change text or values, and a
@@ -294,6 +310,8 @@ tab IDs and returns one bounded tab window. Continue with `nextStartChar`
 as `startChar`, the same `tabId`, and the same `revisionId` when returned.
 A document without a revision can be read but not edited. Use the returned
 structural UTF-16 ranges (not the continuation offset) for formatting.
+Reads report the text and paragraph styles seen in the window, so verify a
+formatting call with a follow-up bounded read of the same tab.
 `google_read_spreadsheet` without ranges lists sheet IDs. Read one sheet
 with `sheetId` and `gridRange` to inspect values, formulas, styles, and merges.
 Use that sheet ID and a bounded bare A1 `range` with `google_format_cells`.
