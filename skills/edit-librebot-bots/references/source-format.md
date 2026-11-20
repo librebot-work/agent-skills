@@ -47,7 +47,7 @@ The only top-level keys are:
 | `icon` | Optional repository-relative SVG, PNG, or WebP file path |
 | `modelRoles` | Required unique roles; 1–4 entries including `default` |
 | `workspace` | Optional flat checkout slots: `key`, optional `label`, `path` |
-| `triggers` | Optional portable `kind: gitrepo` or `kind: whatsapp` semantic trigger definitions |
+| `triggers` | Optional portable `kind: gitrepo`, `kind: whatsapp`, or `kind: cron` trigger definitions |
 | `completionJudge` | Optional task-completion judge: `instructions` and optional declared `modelRole` |
 | `actions` | Optional keyed `kind: gitrepo` or `kind: whatsapp` capability groups |
 | `connectors` | Optional remote MCP capability/resource requirements |
@@ -237,6 +237,23 @@ drive delegation and do not automatically replace the main agent's model.
 
 - Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
 - Repository triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. WhatsApp triggers use `kind: whatsapp` and their own events as documented below. There is no repository pin or source wrapper.
+- Clock triggers use `kind: cron` and `eventTypes: [cron.tick]`. An optional
+  `schedule` suggests a five-field Unix cron `expression` and IANA `timeZone`;
+  the owner configures and enables the installation binding. No connection is
+  needed. For example:
+
+  ```yaml
+  triggers:
+    - key: morning-triage
+      label: Morning triage
+      kind: cron
+      eventTypes: [cron.tick]
+      schedule:
+        expression: "0 9 * * 1-5"
+        timeZone: America/New_York
+      deciderInstructions: Decide whether today's triage needs a new task.
+  ```
+
 - Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, `update_issue_title`, `publish_attachments`, `merge_change_request`, `comment_change_request`, `read_issue_artifacts`, and `write_issue_artifacts`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
 - `publish_attachments` works on GitHub and GitLab. Its `repo_publish_attachments` tool publishes up to 10 task-local `.svg`/`.png` files (10 MiB each) to the dedicated `design-artifacts` branch using the bound connection (GitHub App installation, or the GitLab token with `api` scope and Developer access; GitLab creates the branch from the default branch because it cannot create orphan branches), then posts one issue comment whose `body` uses immutable commit-addressed links via `{{url:<id>}}` placeholders. Unreferenced PNGs are embedded and SVG originals are linked. On GitHub the App needs Contents and Issues write access and the linked owner's live repository write authority; no personal upload token or writable product checkout is required. Optional `transition: {add, remove}` changes labels only after the comment is confirmed and requires `update_issue_labels` in the same group. Retries with the same inputs reuse committed artifacts and the posted comment. The native publisher alone manages the artifact branch; bot instructions must permit this bounded publication but prohibit manual artifact pushes, product-branch changes, merging the artifact branch, and branch-protection bypasses. Artifact links inherit repository access; private inline preview rendering depends on GitHub. Keep credentials out of bot source.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
