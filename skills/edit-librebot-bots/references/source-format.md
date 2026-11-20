@@ -278,8 +278,8 @@ broad `edit_document` grant is removed: declare `edit_document_content`,
 `format_document`, or both instead.
 
 Content and style are separate grants. `edit_document_content` authorizes
-`google_edit_document` for text insertion, replacement, and deletion only.
-`format_document` authorizes `google_format_document`, which takes native
+`google_docs_edit_document_content` for text insertion, replacement, and deletion only.
+`format_document` authorizes `google_docs_format_document`, which takes native
 Docs `requests` — only `updateTextStyle` and `updateParagraphStyle` in this
 pilot — instead of a custom operation schema. Every request names its tab
 explicitly inside `range`, and all requests in one call must target the same
@@ -294,12 +294,12 @@ unit: "PT"}}` and `fields: "bold,fontSize"`; paragraph spacing is one
 `updateParagraphStyle` with `paragraphStyle: {spaceAbove: {magnitude: 12,
 unit: "PT"}, spaceBelow: {magnitude: 6, unit: "PT"}}` and `fields:
 "spaceAbove,spaceBelow"`. Links (`link`), content edits, and structural
-changes are outside this pilot: put text changes in `google_edit_document`
+changes are outside this pilot: put text changes in `google_docs_edit_document_content`
 under `edit_document_content`.
 
 Sheets keeps formatting separate from literal `write_values` (RAW) and
 `write_formulas` (USER_ENTERED). Under `format_cells`, call
-`google_format_cells` with `spreadsheetId`, native `requests`, and `intentId`.
+`google_sheets_format_cells` with `spreadsheetId`, native `requests`, and `intentId`.
 Each request must be `repeatCell` or `updateBorders`; every `range` must use
 the same explicit `sheetId` with zero-based, half-open row and column bounds.
 For example, this formats A1:D1 on sheet ID 42:
@@ -319,14 +319,14 @@ disallowed request refuses the entire batch.
 
 Reads are bounded. Search with plain-text queries over broad Drive discovery
 (existing Docs/Sheets available to the linked account, including shared
-drives); page cursors never broaden authority. `google_read_document` lists
+drives); page cursors never broaden authority. `google_docs_read_document` lists
 tab IDs and returns one bounded tab window. Continue with `nextStartChar`
 as `startChar`, the same `tabId`, and the same `revisionId` when returned.
 A document without a revision can be read but not edited. Use the returned
 structural UTF-16 ranges (not the continuation offset) for formatting.
 Reads report the text and paragraph styles seen in the window, so verify a
 formatting call with a follow-up bounded read of the same tab.
-`google_read_spreadsheet` without ranges lists sheet IDs. Read one sheet
+`google_sheets_read_spreadsheet` without ranges lists sheet IDs. Read one sheet
 with `sheetId` and `gridRange` to inspect values, formulas, styles, and merges.
 Convert the target A1 range to native grid bounds for formatting; for
 example, A1:D1 uses rows `[0, 1)` and columns `[0, 4)`. Read the same range
@@ -341,7 +341,10 @@ calendar IDs and explicit attendee/notification policies. Grant
 `manage_attendees` in addition to create/edit when invitations or attendee
 changes are required.
 
-Use the advertised `google_*` tools with the declared `action` selector.
+Use the advertised `google_<product>_<verb>_<object>` tools (`docs`, `sheets`,
+`calendar`) with the declared `action` selector. Tool names are not grants:
+`google_calendar_replace_event_attendees` uses `manage_attendees` and replaces
+the entire attendee list. `google_get_operation` is shared across products.
 Docs edits require the revision returned by a read; Calendar changes require
 the event ETag. Recurring occurrence versus series changes require explicit
 scope; never change a whole series to work around an occurrence edit.
