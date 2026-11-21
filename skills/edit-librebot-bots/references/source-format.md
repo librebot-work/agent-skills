@@ -258,11 +258,26 @@ drive delegation and do not automatically replace the main agent's model.
 - `publish_attachments` works on GitHub and GitLab. Its `repo_publish_attachments` tool publishes up to 10 task-local `.svg`/`.png` files (10 MiB each) to the dedicated `design-artifacts` branch using the bound connection (GitHub App installation, or the GitLab token with `api` scope and Developer access; GitLab creates the branch from the default branch because it cannot create orphan branches), then posts one issue comment whose `body` uses immutable commit-addressed links via `{{url:<id>}}` placeholders. Unreferenced PNGs are embedded and SVG originals are linked. On GitHub the App needs Contents and Issues write access and the linked owner's live repository write authority; no personal upload token or writable product checkout is required. Optional `transition: {add, remove}` changes labels only after the comment is confirmed and requires `update_issue_labels` in the same group. Retries with the same inputs reuse committed artifacts and the posted comment. The native publisher alone manages the artifact branch; bot instructions must permit this bounded publication but prohibit manual artifact pushes, product-branch changes, merging the artifact branch, and branch-protection bypasses. Artifact links inherit repository access; private inline preview rendering depends on GitHub. Keep credentials out of bot source.
 - Connectors use a unique `label`, non-empty `tools`, optional `description`, `required`, `resources`, and HTTPS `endpoint`. Resource requirements use `key`, `label`, and `tools`. Obtain endpoint identity and tool names from the developer or trusted server metadata; do not invent a working integration. Local `command`, `args`, and stdio configurations are unsupported. Never embed authentication material in endpoints or source files.
 
-Keys use letters/digits followed by letters/digits, `.`, `_`, or `-`, up to 64 characters, and must be unique within each section. Preserve these keys when editing labels or paths. Connector identity remains label-based.
-The sections have independent key namespaces: a workspace, action, and trigger
-may use the same key without becoming linked. There is no root `resources`
-array, `workspace.checkouts` wrapper, or checkout field in an action declaration.
-An optional checkout is selected only in the installation's action binding.
+### Key relationships
+
+Keys use letters/digits followed by letters/digits, `.`, `_`, or `-`, up to 64 characters, and must be unique within each section. Preserve these keys when editing labels or paths.
+Matching keys across sections do not link declarations. Remote MCP connectors
+use their unique `label` as their identity.
+
+There is no root `resources` array, `workspace.checkouts` wrapper, or checkout
+field in an action declaration. An optional checkout is selected only in the
+installation's action binding.
+
+| Declaration | Instance configuration | Runtime use |
+| --- | --- | --- |
+| `actions[].key` | `actionBindings[key]` selects the authorized account/resource and policy | Native tool argument `action: key` selects this action group and its capabilities |
+| `triggers[].key` | `triggerBindings[key]` configures that trigger independently | Its event invokes its `deciderInstructions`; the key does not grant action access |
+| `workspace[].key` | `workspaceBindings[key]` selects the repository checkout | `path` names the checkout location |
+
+For the `documents` action below, tell the decider to call
+`google_docs_read_document` with `action: documents` and a separate document
+ID. Bind that action independently: neither the trigger's connection nor its
+model role grants document access.
 
 ### Native Google Workspace actions
 
