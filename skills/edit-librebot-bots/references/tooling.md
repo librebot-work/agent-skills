@@ -40,9 +40,10 @@ The matching source format uses independent keyed `workspace`, `actions`, and
 `triggers` sections. Workspace is flat; root `resources`, provider-specific action
 arrays, nested checkout declarations, and obsolete `kind: messaging` are rejected.
 Actions support `gitrepo`, `whatsapp`, `google_docs`, `google_sheets`, and
-`google_calendar`, each with its own capability namespace. Triggers remain
-`gitrepo` or `whatsapp`. Owner bindings and consent grant independent runtime
-authority; portable declarations do not.
+`google_calendar`, each with its own capability namespace. Triggers support
+`gitrepo`, `whatsapp`, and `cron`; each requires `deciderActions`, even if `[]`.
+Owner bindings and consent grant independent runtime authority; portable
+declarations do not.
 See [source-format.md](source-format.md) for the accepted declarations.
 Runtime native repository calls use `repo_*` names and a required `action`
 selector for a declared action group, not a workspace or freeform repository.
@@ -68,9 +69,11 @@ trigger preview. Neither source validation nor choosing a tool-capable
 `deciderRole` proves that a decision can read current provider state.
 
 For an ignore/failure reporting an unavailable tool, compare the required read
-with the [decider tool contract](source-format.md#startcontinue-decider-tools):
-check the declared capability, the independent instance action/connector
-binding, its current connection and target, and live provider authority.
+with the [decider tool contract](source-format.md#startcontinue-decider-tools).
+For native reads, check the trigger's `deciderActions` as well as the
+top-level declaration, independent action binding, current connection and
+target, and live provider authority. Migrate older source before validating
+with matching tooling; `[]` opts out of native actions only.
 For MCP reads, also check the connected server's explicit
 `annotations.readOnlyHint: true`; absent/false metadata excludes the tool even
 if it works in a regular task. Do not repair this by inventing source fields,
@@ -79,10 +82,11 @@ granting shell access, or routing an ineligible task as a workaround.
 An explicitly authorized instance trigger preview or real delivery can
 exercise decision reads. Trigger preview uses the same read-only environment
 as live decisions, but does not commit scheduling or external writes.
-Distinguish a missing read capability, a revoked/unbound connection, and an
-eligible read that genuinely found no actionable work. Report only checks
-actually exercised; do not claim deployment or instance upgrades from source
-validation.
+Distinguish a missing grant, a revoked/unbound connection or other read
+failure, and a successful read that found no actionable work. Do not include
+phone numbers or raw message content when reporting a WhatsApp read gap.
+Report only checks actually exercised; do not claim deployment or instance
+upgrades from source validation.
 
 Completion-judge access follows the same live read-only classification and
 authorization checks, including the MCP annotation recheck. Compare its

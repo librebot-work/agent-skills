@@ -87,8 +87,10 @@ no protection bypass, self-approval, shell `gh`, or workspace credentials are ne
 
 For bots that inspect current state before starting or continuing a task,
 explain that event delivery and read access are separate setup requirements.
-The event connection does not automatically give the action connection access
-to the same repository; users must select the intended targets independently.
+Name which actions are used for automatic decisions. This is usage, not
+exclusivity: regular tasks can still use the same authorized actions.
+The event connection does not automatically authorize action reads; users
+must select the intended targets independently, even across providers.
 If required state cannot be read or authority cannot be verified, describe
 that the decision reports the gap instead of starting work merely to explain
 the failure. Separate these decision-time reads from the external writes
@@ -144,8 +146,8 @@ Labels and summarizes new GitHub issues so maintainers can act on them faster.
 
 | Connection | Why | Permissions | Required |
 | --- | --- | --- | --- |
-| AI access | Runs the main model | — | Yes |
-| GitHub App | Receives new issues; posts comments | Issues: read and write | Yes |
+| AI access | Checks eligibility and runs triage tasks | — | Yes |
+| GitHub App | Receives new issues, checks their current state, and posts comments | Issues: read and write | Yes |
 
 ## Get started
 
@@ -155,13 +157,14 @@ Labels and summarizes new GitHub issues so maintainers can act on them faster.
 
 ## When it runs
 
-Each new issue starts a task. The bot reads the issue and comments with a
-summary, a suggested label, and any questions for the reporter.
+The bot checks each new issue before starting a task. It skips issues it
+cannot read. For an eligible issue, the task posts a summary, a suggested
+label, and any questions for the reporter.
 
 ## What the bot changes
 
-Posts one comment per new issue, automatically. It never closes, edits, or
-labels issues itself.
+An admitted task posts one comment, automatically. The eligibility check
+does not write anything. The bot never closes, edits, or labels issues itself.
 ```
 
 ## Review checklist

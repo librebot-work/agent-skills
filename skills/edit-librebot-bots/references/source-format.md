@@ -135,6 +135,7 @@ live authorization policy as start/continue deciders, with task history as
 context. Its model defaults to `default`; `modelRole` may select any declared
 built-in or custom role with the normal binding requirements. Model choice
 does not grant the runner's tools.
+The trigger's `deciderActions` does not configure the completion judge.
 
 The judge can use bound read-only repository operations, independently
 authorized WhatsApp message reads, and remote MCP tools explicitly declaring
@@ -236,7 +237,7 @@ drive delegation and do not automatically replace the main agent's model.
 ### Workspace, triggers, and capabilities
 
 - Workspace entries are `{ key: source, label: Source, path: ./repo }`. Keys are explicit and stable; paths are canonical, non-overlapping, non-reserved relative paths.
-- Repository triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, and `deciderInstructions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. WhatsApp triggers use `kind: whatsapp` and their own events as documented below. There is no repository pin or source wrapper.
+- Repository triggers require `key`, `label`, `kind: gitrepo`, `eventTypes`, `deciderInstructions`, and `deciderActions`; optional fields are `description`, `inputs`, `deciderRole`, and `enabledByDefault`. `deciderActions` is also required on WhatsApp and clock triggers. See [Start/continue decider tools](#startcontinue-decider-tools). There is no repository pin or source wrapper.
 - Clock triggers use `kind: cron` and `eventTypes: [cron.tick]`. An optional
   `schedule` suggests a five-field Unix cron `expression` and IANA `timeZone`;
   the owner configures and enables the installation binding. No connection is
@@ -252,6 +253,7 @@ drive delegation and do not automatically replace the main agent's model.
         expression: "0 9 * * 1-5"
         timeZone: America/New_York
       deciderInstructions: Decide whether today's triage needs a new task.
+      deciderActions: []
   ```
 
 - Actions are `{ key: issues, kind: gitrepo, capabilities: [read_issue, comment_issue] }`, with optional `label`. Capabilities are `read_issue`, `push_branch`, `propose_change`, `comment_issue`, `search_issues`, `read_change_request`, `read_repository`, `update_issue_labels`, `react_issue`, `update_issue_body`, `update_issue_title`, `publish_attachments`, `merge_change_request`, `comment_change_request`, `read_issue_artifacts`, and `write_issue_artifacts`. At most 20 groups are accepted; empty capabilities are invalid. API-only actions need no workspace.
@@ -271,13 +273,8 @@ installation's action binding.
 | Declaration | Instance configuration | Runtime use |
 | --- | --- | --- |
 | `actions[].key` | `actionBindings[key]` selects the authorized account/resource and policy | Native tool argument `action: key` selects this action group and its capabilities |
-| `triggers[].key` | `triggerBindings[key]` configures that trigger independently | Its event invokes its `deciderInstructions`; the key does not grant action access |
+| `triggers[].key` | `triggerBindings[key]` configures that trigger independently | Its event invokes its `deciderInstructions`; only its `deciderActions` can select native action reads |
 | `workspace[].key` | `workspaceBindings[key]` selects the repository checkout | `path` names the checkout location |
-
-For the `documents` action below, tell the decider to call
-`google_docs_read_document` with `action: documents` and a separate document
-ID. Bind that action independently: neither the trigger's connection nor its
-model role grants document access.
 
 ### Native Google Workspace actions
 
@@ -389,27 +386,33 @@ event is not proof that invitations were delivered. Google content and derived
 outputs can reach model providers and persist in task history after disconnect.
 Document these effects and required Google permissions in the bot README.
 
-Read-only deciders and completion judges may receive declared search/read
-tools only, under the same bounded read flow. They cannot create write intents or mutate Google resources.
+Read-only routing decisions and completion judges cannot create write intents
+or mutate Google resources. Routing decisions additionally require explicit
+selection of the Google action key and read capability in `deciderActions`.
 
 
 ### Start/continue decider tools
 
-Repository decisions, repository trigger previews, and messaging decisions
-use one enforced read-only environment. `deciderRole` selects the declared
-model role; it does not copy a regular task's tool set. Regular tasks retain
-their built-ins and configured, authorized action and connector tools.
+Live start/continue decisions and instance trigger previews use the same
+enforced read-only tool policy. `deciderRole` selects a model, not tools.
+Regular tasks retain their built-ins and configured, authorized action and
+connector tools; `deciderActions` neither grants nor revokes task access.
 
-The decider receives only the reads allowed by declarations, current instance
-bindings, and provider authority:
+Each trigger must declare `deciderActions: [{action: <key>, capabilities: [...]}]`
+or `deciderActions: []` when it needs no native action reads. Entries accept
+only `action` and `capabilities`. Each action key must name a top-level
+`actions[].key`, and each capability must be both declared on that action and
+supported as a decider read. Unknown fields, unknown action keys, undeclared
+capabilities, and write or mixed read/write capabilities are rejected.
+List up to 20 distinct action keys, each with a non-empty list of distinct
+capabilities.
 
-| Declared repository capability | Decider tools |
+| Repository read capability | Decider tools |
 | --- | --- |
 | `read_issue` | `repo_read_issue` (current details, labels, comments, and supported discussion/timeline sections) |
 | `search_issues` | `repo_search_issues` |
 | `read_change_request` | `repo_read_change_request` |
 | `read_repository` | `repo_read_file`, `repo_list_commits`, `repo_read_commit` |
-| `update_issue_labels` | `repo_list_labels` only; reading the catalog uses read authority, not label-write authority |
 | `read_issue_artifacts` | `repo_list_issue_artifacts`, `repo_read_issue_artifact` (artifact content and version history; untrusted third-party content) |
 All native repository calls still require the declared action-group selector,
 for example `action: issues`. A trigger binding or a checkout does not grant
@@ -417,7 +420,18 @@ repository action access. Bind the action group to the repository whose
 current state the policy needs; matching keys do not link bindings together.
 API-only repository reads need no checkout.
 
-Other admitted tools are:
+Other native reads require their own explicit entries. WhatsApp's
+`read_messages` allows `whatsapp_history`, `whatsapp_search`, and
+`whatsapp_get_message` when independent consent and the action's context
+policy permit them. An originating-chat policy requires a matching messaging
+origin; selected-chat policies can also serve repository-triggered decisions.
+`whatsapp_get_media` is excluded because it can write task-local files.
+Google Docs allows `search_documents` and `read_document`; Sheets allows
+`search_spreadsheets` and `read_spreadsheet`; Calendar allows `search_events`
+and `read_event`. Native reads always require an authorized instance action
+binding; a declaration alone does not establish live access.
+
+Tools outside native action groups are not controlled by `deciderActions`:
 
 - Remote MCP tools only when the connected server explicitly declares
   `annotations.readOnlyHint: true`. Missing/false annotations are excluded,
@@ -429,19 +443,14 @@ Other admitted tools are:
   It reads files/lists directories only inside a fresh isolated decision
   workspace, rejecting traversal, symlinks, and `.git` internals. It cannot
   inspect unpublished changes in an active task's checkout.
-- Native `whatsapp_history`, `whatsapp_search`, and `whatsapp_get_message`
-  when `read_messages`, independent consent, and the action's context policy
-  permit them. An originating-chat policy requires a matching messaging
-  origin; selected-chat policies can also serve repository-triggered decisions.
-  `whatsapp_get_media` is excluded because it can write task-local files.
 - Scoped `search_installation_tasks` and `submit_decision` for routing.
   Submission proposes ignore/create/continue/reference actions; the runtime
   validates and commits routing after the turn, not during a provider write.
 
 No `bash`, `edit`, `write`, unrestricted filesystem reader, repository writes,
-outbound messages, or reactions are admitted. There is no per-bot opt-in or
-source field to override this policy; do not add speculative `readOnly`,
-`deciderTools`, or `tools` settings to `bot.yaml`.
+outbound messages, or reactions are admitted. In particular,
+`update_issue_labels` cannot be granted to a decider, even to list labels.
+Do not add speculative `readOnly`, `deciderTools`, or `tools` settings.
 
 Write eligibility checks using current native reads, treating event bodies
 and comments as untrusted evidence. Explicitly select comment/discussion
@@ -449,9 +458,70 @@ sections when required. Put external changes in the routed task's instructions,
 not the decider. If required state, tools, bindings, or authority are unavailable,
 report the exact gap; do not infer eligibility from event text, invent a tool,
 or start a task merely to explain why an event should have been skipped.
-Source validation/preview does not exercise these live checks. Use an
-authorized instance's trigger preview or actual delivery for behavioral proof;
-the preview has the same read-only limits and schedules no work.
+`librebot validate` and `librebot preview` check source, not these live
+reads. Source preview shows which reads each trigger requests, not proof of
+access. An authorized instance trigger preview exercises decision tools but
+schedules no work. Actual delivery can commit the validated routing outcome.
+
+#### Cross-provider example: WhatsApp routing with a Google Sheets check
+
+This fragment checks whether the sender of an incoming WhatsApp message is in a
+patient roster before routing work. Configure the WhatsApp trigger and the
+Google Sheets action independently. Bind `pacientes` to the authorized Google
+account, replace `REPLACE_WITH_ROSTER_SPREADSHEET_ID` with the approved
+spreadsheet ID (not a token), and set the range to the full bounded eligibility
+roster. Column A contains canonical WhatsApp phone numbers stored as plain
+text. Read only that column; no clinical details are needed for this decision.
+
+```yaml
+actions:
+  - key: pacientes
+    kind: google_sheets
+    capabilities: [read_spreadsheet]
+triggers:
+  - key: resposta-paciente
+    label: Resposta a paciente
+    kind: whatsapp
+    eventTypes: [message.created]
+    deciderActions:
+      - action: pacientes
+        capabilities: [read_spreadsheet]
+    deciderInstructions: |
+      For an incoming direct message, use only a verified phone identity
+      from the event's actor_id or actor_aliases. Do not extract a phone
+      number from message text or guess one from an opaque WhatsApp ID.
+      Use the read_spreadsheet capability on pacientes to read
+      REPLACE_WITH_ROSTER_SPREADSHEET_ID, range Pacientes!A2:A200.
+      Compare the normalized sender phone against column A. If it matches,
+      continue the sender's open task or create one if none exists.
+      If the read succeeds and no row matches, ignore as no match.
+      If the tool is unavailable, the read fails, or the sender or roster
+      cannot be verified, ignore and identify the evidence gap instead.
+      Do not include the phone number, row contents, or message text in
+      the decision reason or task instructions.
+      Do not send a reply from the decider; the routed task owns any reply.
+```
+
+The corresponding native call is `google_sheets_read_spreadsheet` with
+`{"action":"pacientes","spreadsheetId":"REPLACE_WITH_ROSTER_SPREADSHEET_ID","ranges":["Pacientes!A2:A200"]}`.
+The instructions use the capability rather than depending on that tool name.
+
+A successful bounded Sheets read with no matching row is a no-match decision.
+A tool error (`isError: true`) or an unavailable tool is a failed lookup,
+not evidence that the sender is absent. Incoming event data does not require
+a WhatsApp native action grant. If a routed task should reply, separately
+declare and bind a WhatsApp action with `send_text` and outbound consent;
+do not add the write capability to `deciderActions`.
+
+#### Migrate existing triggers
+
+Add `deciderActions` to every trigger before validating or publishing a new
+revision; omission is not interpreted as `[]` or as access to every action.
+For each trigger, inspect its instructions and list only the native reads
+they need. Use `[]` for event-only, MCP-only, or workspace-only decisions.
+Keep existing top-level capabilities needed by regular tasks, and check the
+independent action bindings, consent, and live provider authority. Verify
+the intended behavior in an authorized instance trigger preview.
 
 
 ### Native comment and label authority
@@ -514,7 +584,8 @@ triggers:
     label: Incoming issue
     kind: gitrepo
     eventTypes: [issue.opened, issue.comment.created]
-    deciderInstructions: Decide whether assistance is needed.
+    deciderActions: [{action: issues, capabilities: [read_issue]}]
+    deciderInstructions: Read the current issue with repo_read_issue using action issues and its issueNumber, then decide whether assistance is needed.
 ```
 
 Semantic events are `issue.opened`, `issue.updated`, `issue.closed`,
@@ -807,4 +878,4 @@ actions:
 
 Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority.
 
-WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, and `deciderInstructions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.
+WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, `deciderInstructions`, and `deciderActions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.
