@@ -10,6 +10,8 @@ npx --yes --package="$TOOLS" librebot validate . --json
 npx --yes --package="$TOOLS" librebot preview . --json
 ```
 
+Use `librebot-tools` 0.5.0 or newer for sources without a top-level `name`. Rename the bot on its platform page.
+
 Custom model roles require `0.4.6` or newer. Native Google action kinds, `completionJudge`, and `comment_change_request` require `0.4.9` or newer. The Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant require `0.4.12` or newer. Native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) require `0.4.10` or newer. Upgrade note fields (`upgradeSummary`, `upgradePriority`) and the shared `validateUpgradeNote` contract helper require `0.4.13` or newer. Do not substitute an arbitrary Git checkout or invent an archive path. If no matching release is available, report the tooling gap.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
@@ -18,7 +20,7 @@ Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep th
 | --- | --- |
 | `validate <dir> --json` | Validates source shape, semantics, cross-file references, limits, and locks. Returns `ok` and diagnostics; invalid source exits nonzero. |
 | `preview <dir> --json` | Validates and prints the resolved definition, asset hashes/sizes, skill files, warnings, and lock metadata. Does not run the bot. |
-| `scaffold <dir> --name 'Name' --description 'Description'` | Writes a new skeleton with example content and a user-manual `README.md` whose placeholders must be replaced; use only an empty destination. Does not provision a platform bot. |
+| `scaffold <dir> --name 'Name' --description 'Description'` | Writes a new skeleton with example content and a user-manual `README.md` whose placeholders must be replaced; use only an empty destination. `--name` sets README and instructions headings, not the platform-managed name. Does not provision a platform bot. |
 | `resolve-skills <dir> --network --vendor` | Installs selected external skill content locally and produces a lock plus vendor tree. Existing locks are reused where valid. |
 | `resolve-skills <dir> --update --network --vendor` | Intentionally updates existing skill dependency resolutions. |
 

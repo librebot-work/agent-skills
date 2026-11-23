@@ -23,7 +23,7 @@ skills/
   .vendor/                  # generated external content; commit it
 ```
 
-The source repository describes the shared bot. Account credentials, repository bindings for workspace mounts, concrete instance model choices, handle, visibility, and adopted revision pins are managed outside these files.
+The source repository describes the shared bot. The display name and URL handle are platform-managed; rename the bot on its Librebot page. Account credentials, repository bindings for workspace mounts, concrete instance model choices, visibility, and adopted revision pins are also managed outside these files.
 
 ## Required root `README.md`
 
@@ -35,12 +35,13 @@ Write it as a user manual: what the bot is for, what it is not for, the AI acces
 
 ## `bot.yaml`
 
+Top-level `name` is rejected. Use `librebot-tools` 0.5.0 or newer for this source format.
+
 The only top-level keys are:
 
 | Key | Meaning |
 | --- | --- |
 | `formatVersion` | Required; integer `1` |
-| `name` | Required display name, not the bot's URL handle |
 | `description` | Required non-empty description |
 | `upgradeSummary` | Optional release note for the next publish: one trimmed line of plain text, 1–280 Unicode code points |
 | `upgradePriority` | Optional highlight for the note: `action` or `notable`; requires `upgradeSummary` |
@@ -77,7 +78,6 @@ Minimal definition:
 
 ```yaml
 formatVersion: 1
-name: Issue assistant
 description: Helps triage repository issues.
 modelRoles:
   - role: default

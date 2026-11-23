@@ -28,11 +28,14 @@ npx --yes --package="$TOOLS" librebot preview . --json
 
 Node.js 24 or newer is required. Custom model roles need tools `0.4.6` or newer; Google action kinds, `completionJudge`, and `comment_change_request` need `0.4.9` or newer; native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) need `0.4.10` or newer; the Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant need `0.4.12` or newer; upgrade note fields (`upgradeSummary`, `upgradePriority`) need `0.4.13` or newer. If the available release is older than a contract the source uses, report the tooling gap. Respect network approval policy. Validation does not execute bots or install external skills. Use developer-supplied failing output as the baseline rather than rerunning to confirm it.
 
+Use `librebot-tools` 0.5.0 or newer for the platform-managed name contract; older versions require a `name` field that the current source format rejects.
+
 ## 2. Edit the right surface
 
 | Requested change | Source to edit |
 | --- | --- |
-| Display name, description, model roles and requirements | `bot.yaml` |
+| Display name or URL handle | Rename on the Librebot bot page; **not source files** |
+| Description, model roles and requirements | `bot.yaml` |
 | Release note for the next publish: what changed since the previous release | `bot.yaml` → `upgradeSummary`, plus `upgradePriority` when it needs highlighting |
 | Bot icon | `bot.yaml` → `icon` and its referenced SVG, PNG, or WebP file |
 | User manual published on the bot page: purpose, limits, required AI access and connections, setup, examples, and external changes | Required root `README.md` |
@@ -42,7 +45,7 @@ Node.js 24 or newer is required. Custom model roles need tools `0.4.6` or newer;
 | Structured external knowledge references | `bot.yaml` → `knowledgeSources` |
 | A local procedural skill and its supporting files | `skills/<skill-id>/SKILL.md` and files beside it |
 | External skill dependencies | `skills/sources.yaml`, then regenerate the lock/vendor files |
-| Handle, visibility, credentials, model/provider bindings, instance pins | Librebot system settings; **not source files** |
+| Visibility, credentials, model/provider bindings, instance pins | Librebot system settings; **not source files** |
 
 Keep these invariants:
 
