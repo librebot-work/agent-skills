@@ -280,9 +280,9 @@ installation's action binding.
 
 Google actions require `librebot-tools@0.4.9` or newer. The Docs
 content/format split and the Sheets `format_cells` grant together require
-`0.4.12` or newer. Declarations contain capabilities, never account IDs,
-tokens, calendar IDs, or installation policies. No checkout or MCP
-connector is required:
+`0.4.12` or newer, and `google_drive` requires `0.5.2` or newer. Declarations
+contain capabilities, never account IDs, tokens, calendar IDs, folder IDs, or
+installation policies. No checkout or MCP connector is required:
 
 ```yaml
 actions:
@@ -295,6 +295,9 @@ actions:
   - key: schedule
     kind: google_calendar
     capabilities: [search_events, read_event, create_event, edit_event]
+  - key: drive_files
+    kind: google_drive
+    capabilities: [list_files, get_file_metadata, download_file]
 ```
 
 Docs capabilities are `search_documents`, `read_document`,
@@ -363,15 +366,36 @@ back to check `enteredFormat` and `effectiveFormat` independently.
 Calendar searches require an explicit time window. Docs edits and Calendar
 changes fail on stale revisions or ETags instead of merging; read again.
 
-One Google account can serve all three groups. The installer binds each
-independently. Drive discovery covers existing Docs/Sheets available to the
+One Google account can serve all four groups. The installer binds each
+independently. Docs and Sheets discovery covers existing files available to the
 linked account, not just selected files. Calendar bindings select exact
 calendar IDs and explicit attendee/notification policies. Grant
 `manage_attendees` in addition to create/edit when invitations or attendee
 changes are required.
+Drive read capabilities are `list_files`, `get_file_metadata`, `download_file`,
+and `export_file`. Write capabilities are `upload_file`, `rename_file`,
+`create_subfolder`, and `replace_file_content`. Grant each separately.
+Read-only groups can use read-only Google Drive access; write groups require
+the full Drive grant.
+
+At installation, the owner lets each Drive group use either any folder the
+account can open or specific folders, each including everything inside it.
+Instructions must not assume either choice or name folder IDs. Start with
+`google_drive_list_files` without `folderId`: it returns the selected folders,
+or the top of My Drive when any folder is allowed. Pass a returned folder's
+ID as `folderId` to open it, or `query` to search file names within the
+allowed scope. `upload_file` and `create_subfolder` take an optional
+`folderId`; omit it only when a single folder is selected or any folder is
+allowed. Otherwise, the call is refused with the choices listed. Shortcuts
+are never followed, and trashed items are excluded. Use download for
+binary files and export for supported native Workspace formats (Docs as PDF,
+Sheets as XLSX). Download, export, upload, and replacement each have a 5 MiB
+content limit. Replacement changes the content of an existing binary file
+without changing its identity. Drive capabilities are not available in
+`deciderActions`.
 
 Use the advertised `google_<product>_<verb>_<object>` tools (`docs`, `sheets`,
-`calendar`) with the declared `action` selector. Tool names are not grants:
+`calendar`, `drive`) with the declared `action` selector. Tool names are not grants:
 `google_calendar_replace_event_attendees` uses `manage_attendees` and replaces
 the entire attendee list. `google_get_operation` is shared across products.
 Docs edits require the revision returned by a read; Calendar changes require

@@ -12,7 +12,7 @@ npx --yes --package="$TOOLS" librebot preview . --json
 
 Use `librebot-tools` 0.5.0 or newer for sources without a top-level `name`. Rename the bot on its platform page.
 
-Custom model roles require `0.4.6` or newer. Native Google action kinds, `completionJudge`, and `comment_change_request` require `0.4.9` or newer. The Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant require `0.4.12` or newer. Native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) require `0.4.10` or newer. Upgrade note fields (`upgradeSummary`, `upgradePriority`) and the shared `validateUpgradeNote` contract helper require `0.4.13` or newer. Do not substitute an arbitrary Git checkout or invent an archive path. If no matching release is available, report the tooling gap.
+Custom model roles require `0.4.6` or newer. Native Google action kinds, `completionJudge`, and `comment_change_request` require `0.4.9` or newer. The Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant require `0.4.12` or newer. Native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) require `0.4.10` or newer. Upgrade note fields (`upgradeSummary`, `upgradePriority`) and the shared `validateUpgradeNote` contract helper require `0.4.13` or newer. `google_drive` requires `0.5.2` or newer. Do not substitute an arbitrary Git checkout or invent an archive path. If no matching release is available, report the tooling gap.
 
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
 
@@ -41,8 +41,8 @@ An editor schema is useful for completion, but is not a substitute for `validate
 The matching source format uses independent keyed `workspace`, `actions`, and
 `triggers` sections. Workspace is flat; root `resources`, provider-specific action
 arrays, nested checkout declarations, and obsolete `kind: messaging` are rejected.
-Actions support `gitrepo`, `whatsapp`, `google_docs`, `google_sheets`, and
-`google_calendar`, each with its own capability namespace. Triggers support
+Actions support `gitrepo`, `whatsapp`, `google_docs`, `google_sheets`,
+`google_calendar`, and `google_drive`, each with its own capability namespace. Triggers support
 `gitrepo`, `whatsapp`, and `cron`; each requires `deciderActions`, even if `[]`.
 Owner bindings and consent grant independent runtime authority; portable
 declarations do not.
