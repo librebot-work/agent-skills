@@ -14,6 +14,14 @@ Use `librebot-tools` 0.5.0 or newer for sources without a top-level `name`. Rena
 
 Custom model roles require `0.4.6` or newer. Native Google action kinds, `completionJudge`, and `comment_change_request` require `0.4.9` or newer. The Docs `edit_document_content`/`format_document` split and the Sheets `format_cells` grant require `0.4.12` or newer. Native issue artifact capabilities (`read_issue_artifacts`, `write_issue_artifacts`) require `0.4.10` or newer. Upgrade note fields (`upgradeSummary`, `upgradePriority`) and the shared `validateUpgradeNote` contract helper require `0.4.13` or newer. `google_drive` requires `0.5.2` or newer. Do not substitute an arbitrary Git checkout or invent an archive path. If no matching release is available, report the tooling gap.
 
+Native connector selection limits require `librebot-tools` 0.5.4 or newer:
+Drive `folderAccess`, Docs/Sheets `fileAccess`, Calendar `calendars`,
+WhatsApp action `context` and `outbound`, and WhatsApp trigger `audience`
+and `context`. Use `validate` to check the
+[allowed modes and counts](source-format.md#native-connector-selection-limits)
+and `preview` to inspect the declared limits; neither command checks live
+instance bindings against them.
+
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
 
 | Command | Result |
@@ -45,7 +53,8 @@ Actions support `gitrepo`, `whatsapp`, `google_docs`, `google_sheets`,
 `google_calendar`, and `google_drive`, each with its own capability namespace. Triggers support
 `gitrepo`, `whatsapp`, and `cron`; each requires `deciderActions`, even if `[]`.
 Owner bindings and consent grant independent runtime authority; portable
-declarations do not.
+declarations can limit those choices but do not grant authority or contain
+the selected IDs and policies.
 See [source-format.md](source-format.md) for the accepted declarations.
 Runtime native repository calls use `repo_*` names and a required `action`
 selector for a declared action group, not a workspace or freeform repository.
@@ -111,3 +120,7 @@ validation with the public npm release.
 ## Publication boundary
 
 Git is the transport; these tools have no login, push, deployment, bot execution, or instance-upgrade command. Use the developer's Git credentials and authorized system UI/API separately. A successful local validation, push, or tag creation does not prove that the platform accepted the revision or upgraded an instance.
+
+An upgrade to a revision with narrower limits blocks on any existing binding
+that no longer fits. The owner must re-pick affected selections in the upgrade
+flow; successful source validation alone cannot establish compatibility.

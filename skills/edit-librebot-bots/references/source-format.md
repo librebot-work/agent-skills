@@ -50,7 +50,7 @@ The only top-level keys are:
 | `workspace` | Optional flat checkout slots: `key`, optional `label`, `path` |
 | `triggers` | Optional portable `kind: gitrepo`, `kind: whatsapp`, or `kind: cron` trigger definitions |
 | `completionJudge` | Optional task-completion judge: `instructions` and optional declared `modelRole` |
-| `actions` | Optional keyed `kind: gitrepo` or `kind: whatsapp` capability groups |
+| `actions` | Optional keyed capability groups: `gitrepo`, `whatsapp`, `google_docs`, `google_sheets`, `google_calendar`, or `google_drive` |
 | `connectors` | Optional remote MCP capability/resource requirements |
 | `knowledgeSources` | Optional structured external knowledge references |
 
@@ -123,6 +123,11 @@ skipped tagged releases on the same forward path, newest first and
 deduplicated by commit. Those earlier notes are historical context, even
 ones marked `action`; only the direct pinned-to-target comparison decides
 new requirements. Notes are displayed verbatim and never gate an upgrade.
+
+Narrowing [connector selection limits](#native-connector-selection-limits)
+can make existing bindings incompatible. Owners must re-pick any affected
+selections before the upgrade can proceed. Describe the required setup in
+`upgradeSummary` with `upgradePriority: action`.
 
 ### Task-completion judge
 
@@ -276,13 +281,74 @@ installation's action binding.
 | `triggers[].key` | `triggerBindings[key]` configures that trigger independently | Its event invokes its `deciderInstructions`; only its `deciderActions` can select native action reads |
 | `workspace[].key` | `workspaceBindings[key]` selects the repository checkout | `path` names the checkout location |
 
+### Native connector selection limits
+
+Use `librebot-tools` 0.5.4 or newer. Declare limits only when the bot needs
+them, for example when its workflow assumes exactly one intake folder:
+
+```yaml
+actions:
+  - key: intake
+    kind: google_drive
+    capabilities: [list_files, download_file, upload_file]
+    folderAccess: { allow: [selected_folders], maxFolders: 1 }
+```
+
+| Declaration | Optional field | Accepted keys and values |
+| --- | --- | --- |
+| `actions[]`, `google_drive` | `folderAccess` | `allow`: `any_folder`, `selected_folders`; `maxFolders`: cap 50 |
+| `actions[]`, `google_docs` or `google_sheets` | `fileAccess` | `allow`: `any_file`, `selected_files`; `maxFiles`: cap 50 |
+| `actions[]`, `google_calendar` | `calendars` | `maxCalendars`: cap 100, required inside `calendars` |
+| `actions[]`, `whatsapp` with `read_messages` | `context` | `allow`: `originating_chat`, `selected_chats`; `maxChats`: cap 100 |
+| `actions[]`, `whatsapp` with any capability other than `read_messages` | `outbound` | `allow`: `originating_chat`, `triggering_sender`, `fixed_allowlist`; `chatKinds`: `private`, `group`; `maxChats`: cap 100 |
+| `triggers[]`, `whatsapp` | `audience` | `allow`: `anyone`, `specific`; `chatTypes`: `private`, `group`; `maxChats`: cap 100 |
+| `triggers[]`, `whatsapp` | `context` | `allow`: `originating_chat`, `selected_chats`; `maxChats`: cap 100 |
+
+Each `allow`, `chatKinds`, or `chatTypes` list must be non-empty, with
+unique values from its row. An omitted list leaves the choices unrestricted
+by the definition. Each `max*` accepts an integer from 1 to its platform cap,
+or `-1` for no bot limit (the platform cap still applies). Omitting the
+count means the same as `-1`; omit `calendars` if no count is needed.
+Zero, other negatives, non-integers, and values above the cap are rejected.
+So are empty objects, unknown keys, and fields on the wrong kind or without
+the required capability. If `allow` is present, a `max*` is rejected unless
+the list includes the relevant selecting mode (`selected_folders`,
+`selected_files`, `selected_chats`, `fixed_allowlist`, or `specific`).
+WhatsApp `outbound.allow: [triggering_sender]` cannot be paired with
+`chatKinds` that excludes `private`. Docs and Sheets cannot declare
+`fileAccess.allow: [selected_files]` with `create_document` and
+`create_spreadsheet`, respectively.
+
+These fields restrict owner choices; they do not grant authority. Keep credentials,
+connection IDs, concrete resource IDs, and actual owner policies out of source.
+Settings offer only allowed modes and preselect and hide the choice when
+there is only one. Pickers enforce the count and use single selection at 1;
+with no bot limit, they show the platform cap.
+Authors can also set these limits in action settings, and the bot
+definition page summarizes them.
+
+Bindings must fit the definition at save and upgrade. Drive checks the
+folder mode and selected folder count; Docs and Sheets check the file mode
+and selected file count; Calendar checks the calendar count. WhatsApp
+actions check the read scope and selected chat count, and the outbound
+mode, allowed chat-kind subset, and fixed allowlist size. For an enabled
+WhatsApp trigger, the audience is `specific` if its binding lists any chat
+or sender IDs, and `anyone` otherwise. `audience.maxChats` counts chat IDs,
+not sender IDs. If the definition sets `audience.chatTypes`, the binding
+must specify a subset of those types. A trigger's context policy, when
+present, must fit `context.allow` and `context.maxChats`. A mismatch
+returns a field-specific error (HTTP 400 on upgrade) until the owner
+re-picks; the upgrade can submit updated action and trigger bindings.
+
 ### Native Google Workspace actions
 
 Google actions require `librebot-tools@0.4.9` or newer. The Docs
 content/format split and the Sheets `format_cells` grant together require
-`0.4.12` or newer, and `google_drive` requires `0.5.2` or newer. Declarations
-contain capabilities, never account IDs, tokens, calendar IDs, folder IDs, or
-installation policies. No checkout or MCP connector is required:
+`0.4.12` or newer, and `google_drive` requires `0.5.2` or newer. Optional
+[selection limits](#native-connector-selection-limits) require `0.5.4` or
+newer. Neither capabilities nor limits contain account IDs, tokens, calendar
+IDs, folder IDs, file IDs, or actual installation policies. No checkout or
+MCP connector is required:
 
 ```yaml
 actions:
@@ -292,9 +358,11 @@ actions:
   - key: budget
     kind: google_sheets
     capabilities: [read_spreadsheet, write_values]
+    fileAccess: { allow: [selected_files], maxFiles: 1 }
   - key: schedule
     kind: google_calendar
     capabilities: [search_events, read_event, create_event, edit_event]
+    calendars: { maxCalendars: 2 }
   - key: drive_files
     kind: google_drive
     capabilities: [list_files, get_file_metadata, download_file]
@@ -349,9 +417,12 @@ property by including its path in `fields` and omitting its value from
 No wildcard masks, value or formula writes, row deletion, or links; one
 disallowed request refuses the entire batch.
 
-Reads are bounded. Search with plain-text queries over broad Drive discovery
-(existing Docs/Sheets available to the linked account, including shared
-drives); page cursors never broaden authority. `google_docs_read_document` lists
+Reads are bounded. In `any_file` scope, search with plain-text queries over
+existing Docs/Sheets available to the linked account, including shared
+drives. In `selected_files` scope, search with no `query` lists selected
+file metadata (skipping missing, trashed, or wrong-type files); a query
+filters results to that set. Page cursors never broaden authority.
+`google_docs_read_document` lists
 tab IDs and returns one bounded tab window. Continue with `nextStartChar`
 as `startChar`, the same `tabId`, and the same `revisionId` when returned.
 A document without a revision can be read but not edited. Use the returned
@@ -367,9 +438,21 @@ Calendar searches require an explicit time window. Docs edits and Calendar
 changes fail on stale revisions or ETags instead of merging; read again.
 
 One Google account can serve all four groups. The installer binds each
-independently. Docs and Sheets discovery covers existing files available to the
-linked account, not just selected files. Calendar bindings select exact
-calendar IDs and explicit attendee/notification policies. Grant
+independently. For Docs and Sheets, the owner binding's `fileAccess` is
+`{ scope: "any_file" }` or `{ scope: "selected_files", fileIds: [...] }`,
+with 1–50 unique IDs matching `/^[A-Za-z0-9_-]{1,256}$/`. Older bindings
+without `fileAccess` are read as `any_file`. Selected files require the
+Google `drive.readonly` scope in addition to the necessary product access.
+On save, each selected file must be reachable, not trashed, and of the
+right type. Settings flag files the account cannot edit if the group
+declares write capabilities. File-ID tools return the same error for an
+unselected ID as for a missing file. A `selected_files` binding cannot
+be saved for a group declaring its create capability, even if the
+definition also allows `any_file`; create tools also refuse in that scope.
+The file picker searches by Docs or Sheets type and resolves selected IDs
+to summaries with name, location, modification time, and editability.
+Calendar bindings select exact calendar IDs, up to any declared
+`calendars.maxCalendars`, and explicit attendee/notification policies. Grant
 `manage_attendees` in addition to create/edit when invitations or attendee
 changes are required.
 Drive read capabilities are `list_files`, `get_file_metadata`, `download_file`,
@@ -379,8 +462,9 @@ Read-only groups can use read-only Google Drive access; write groups require
 the full Drive grant.
 
 At installation, the owner lets each Drive group use either any folder the
-account can open or specific folders, each including everything inside it.
-Instructions must not assume either choice or name folder IDs. Start with
+account can open or specific folders, each including everything inside it,
+subject to the definition's `folderAccess` limits. Instructions must not
+assume an unrestricted choice or name folder IDs. Start with
 `google_drive_list_files` without `folderId`: it returns the selected folders,
 or the top of My Drive when any folder is allowed. Pass a returned folder's
 ID as `folderId` to open it, or `query` to search file names within the
@@ -898,8 +982,30 @@ actions:
   - key: messaging
     kind: whatsapp
     capabilities: [read_messages, send_text, set_reaction, remove_reaction]
+    context: { allow: [originating_chat] }
+    outbound: { allow: [originating_chat, triggering_sender], chatKinds: [private] }
 ```
 
 Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority.
 
+Use optional `context` to restrict the owner's read scope and `outbound`
+to restrict send modes, destination kinds, or the number of allowlisted
+chats. See [selection limits](#native-connector-selection-limits).
+
 WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, `deciderInstructions`, and `deciderActions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.
+
+Optional `audience` limits who may trigger the bot, the chat types, and
+how many chats the owner may select. Optional `context` limits which chats
+the trigger can read, independently of the action group's read scope:
+
+```yaml
+triggers:
+  - key: inbound
+    kind: whatsapp
+    label: Inbound
+    eventTypes: [message.created]
+    deciderInstructions: Decide whether the new message needs a task.
+    deciderActions: []
+    audience: { allow: [specific], chatTypes: [group], maxChats: 1 }
+    context: { allow: [originating_chat] }
+```

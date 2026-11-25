@@ -34,13 +34,23 @@ Derive requirements from `librebot preview . --json`, not from memory. Each decl
 | `modelRoles` | An AI credential in **AI access**, and model choices in instance **Settings → Overview → AI models**. Explain each role beyond `default`, including any custom role's purpose. Custom roles require explicit instance selections and cannot inherit workspace defaults; built-in roles can inherit their same-role workspace defaults. |
 | `workspace` slots | A repository for each slot in **Settings → Working directory**, through a GitHub App connection or a GitLab connection (a token with `read_repository` or `api` and Reporter access; `api` and Developer when the bot pushes from it). Say what each slot is for, using its `label`. |
 | `actions` with `kind: gitrepo` | A repository connection: the **GitHub App** installed with access to the repository, or a **GitLab personal access token** in **Connections**. Translate each capability into plain language (`comment_issue` → "posts comments on issues"; `push_branch` → "pushes branches to your repository"). Users grant these in **Settings → Actions**. |
-| `actions` with `kind: whatsapp` | A WhatsApp connection (**Connections → Connect WhatsApp**) with the matching per-phone permissions. Reading message context and automated sending are separate, explicit owner choices that are off by default; say which ones the bot needs and what breaks without them. |
+| `actions` with `kind: google_drive` | A linked Google account and a Drive action binding in **Settings → Actions**. State whether users can allow any folder or must pick folders, and how many they can pick. Selected folders include their contents. State whether the bot needs read-only or full Drive access. |
+| `actions` with `kind: google_docs` or `kind: google_sheets` | A Google Docs or Sheets action binding. Explain whether users grant access to any accessible file or select specific documents or spreadsheets, and how many. Selected-file access also requires read-only Drive permission; actions that create documents or spreadsheets cannot use selected-file access. |
+| `actions` with `kind: google_calendar` | A Google Calendar action binding. Say which calendars to select, how many the bot allows, and whether the bot creates events or manages attendees and notifications. |
+| `actions` with `kind: whatsapp` | A WhatsApp connection (**Connections → Connect WhatsApp**) with the matching per-phone permissions. Reading message context and automated sending are separate, explicit owner choices that are off by default; say which ones the bot needs and what breaks without them. Explain any limits on read scope, send destinations, chat kinds, and selected chat counts. |
 | `triggers` with `kind: gitrepo` | GitHub: the GitHub App connection delivers events, subscribed to the App events below. GitLab: a project webhook, which needs a PAT with `api` scope and Maintainer or Owner access to install automatically (all triggers below enabled), or a maintainer to register it manually with the triggers below. Name each trigger's events and what it does. Triggers can be switched off in **Settings → Triggers**. |
-| `triggers` with `kind: whatsapp` | A WhatsApp connection with incoming events approved. WhatsApp triggers start switched off; tell users to enable them and which events matter. |
+| `triggers` with `kind: whatsapp` | A WhatsApp connection with incoming events approved. WhatsApp triggers start switched off; tell users to enable them and which events matter. Explain any audience, chat type, chat count, or context limits separately from the action settings. |
 | `connectors` (remote MCP) | An MCP connection in **Connections** with the service's endpoint and authentication, selected in **Settings → Actions**. Name the service, link its documentation, and say which tools the bot uses. |
 | `knowledgeSources`, `knowledge/`, `skills/` | Nothing to set up; they ship with the bot. Mention only what users benefit from knowing (for example, "answers from the 2026 handbook"). |
 
 Mark a connection optional only if the bot still does useful work without it, and say what is lost. Never ask users to put tokens or secrets anywhere other than Librebot's connection settings.
+
+Translate [selection limits](source-format.md#native-connector-selection-limits)
+into setup instructions, not YAML: for example, “In **Settings → Actions**,
+choose one Drive folder for incoming files.” The owner chooses the actual
+folders, files, calendars, or chats; never put their IDs or policies in the
+manual. If tighter limits require existing owners to re-pick before upgrading,
+put the version-specific warning in the upgrade note, not the README.
 
 For each declared repository event, tell users exactly which provider events
 must be switched on. Take them from `librebot preview . --json`
@@ -174,4 +184,4 @@ does not write anything. The bot never closes, edits, or labels issues itself.
 - Model roles beyond `default` are explained.
 - Triggered bots distinguish decision-time read requirements from task writes, explain unreadable/unverifiable eligibility, and disclose required MCP read-only declarations and independent message-context consent.
 - No author-only content, instance-specific values, or secrets.
-- Update the README in the same change whenever capabilities, triggers, connectors, or workspace slots change.
+- Update the README in the same change whenever capabilities, selection limits, triggers, connectors, or workspace slots change.
