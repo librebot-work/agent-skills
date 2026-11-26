@@ -22,6 +22,10 @@ and `context`. Use `validate` to check the
 and `preview` to inspect the declared limits; neither command checks live
 instance bindings against them.
 
+WhatsApp action `outboundDefaults` requires `librebot-tools` 0.5.5 or newer,
+or the matching platform-supplied artifact before registry publication.
+These recommendations do not affect binding compatibility.
+
 Use `npx --yes --package="$TOOLS" librebot ...` with the commands below. Keep the `TOOLS` variable in the same shell session as the command, or set it again when a harness uses isolated shell calls. `--yes` permits npm's package-fetch prompt; it is not permission to bypass a harness's network or execution approvals. Report the tools version alongside validation results when it matters for a diagnosis.
 
 | Command | Result |

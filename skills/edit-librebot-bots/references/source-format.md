@@ -984,6 +984,7 @@ actions:
     capabilities: [read_messages, send_text, set_reaction, remove_reaction]
     context: { allow: [originating_chat] }
     outbound: { allow: [originating_chat, triggering_sender], chatKinds: [private] }
+    outboundDefaults: { maxActionsPerRun: 10, rateLimit: { maxActions: 20, windowSeconds: 60 } }
 ```
 
 Repository action groups remain `kind: gitrepo` with their existing capability namespace. Mixing namespaces is rejected. Owner setup separately selects exact connection and sender-phone IDs, read context, outbound destinations, exclusions, mention and reaction restrictions, and per-run/rate limits. Reading and automated writes require independent explicit OAuth consent, off by default. Portable declarations never grant authority.
@@ -991,6 +992,15 @@ Repository action groups remain `kind: gitrepo` with their existing capability n
 Use optional `context` to restrict the owner's read scope and `outbound`
 to restrict send modes, destination kinds, or the number of allowlisted
 chats. See [selection limits](#native-connector-selection-limits).
+
+On a WhatsApp action group with at least one write capability, optional
+`outboundDefaults` suggests integer `maxActionsPerRun` (1–100), a `rateLimit`
+with both `maxActions` (1–1,000) and `windowSeconds` (1–86,400), and/or
+`reactionTargets` (`triggering_message` or `associated_messages`). Omitted
+values keep the platform's conservative defaults for new bindings. Suggestions
+do not change or constrain an existing policy: the owner must explicitly apply
+them in settings or during an upgrade. They do not select destinations or grant
+permissions. Use `outbound` for binding constraints.
 
 WhatsApp triggers use `kind: whatsapp`, `eventTypes: [message.created, reaction.changed]` (choose only needed events), and the usual explicit `key`, `label`, `deciderInstructions`, and `deciderActions`. Repository and messaging event namespaces cannot be mixed. Owner bindings independently authorize event filters and context.
 
